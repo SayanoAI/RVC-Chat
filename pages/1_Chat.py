@@ -1,10 +1,9 @@
 import hashlib
 import json
 import os
-import sys
 import streamlit as st
 from webui import MENU_ITEMS, TTS_MODELS, config, get_cwd, i18n, DEVICE_OPTIONS
-from webui.chat import init_assistant_template, init_llm_options, init_model_config, init_model_params, Character
+from webui.chat import init_assistant_template, init_llm_options, init_model_config, init_model_params, Character, load_character_data
 from webui.downloader import OUTPUT_DIR
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
@@ -32,7 +31,7 @@ def get_voice_list():
     return models_list
 
 def get_character_list():
-    models_list =  [os.path.relpath(path,CWD) for path in get_filenames(root=os.path.join(CWD,"models","RVC"),folder=".characters",exts=["json"])]
+    models_list =  [os.path.relpath(path,CWD) for path in get_filenames(root=os.path.join(CWD,"models"),folder="Characters",exts=["json"])]
     return models_list
 
 def init_state():
@@ -63,7 +62,8 @@ def refresh_data(state):
     return state
 
 def save_character(state):
-    with open(os.path.join(CWD,"models","RVC",".characters",f"{state.assistant_template.name}.json"),"w") as f:
+    character_file = os.path.join(CWD,"models","Characters",f"{state.assistant_template.name}.json")
+    with open(character_file,"w") as f:
         loaded_state = {
             "assistant_template": vars(state.assistant_template),
             "tts_options": vars(state.tts_options),
@@ -72,6 +72,7 @@ def save_character(state):
         }
         f.write(json.dumps(loaded_state,indent=2))
     state = refresh_data(state)
+    if state.character: state.character.character_data = load_character_data(character_file)
     return state
 
 def load_character(state):
@@ -89,7 +90,8 @@ def load_character(state):
 
 def save_model_config(state):
     fname = os.path.join(CWD,"models","LLM","config.json")
-    key = get_hash(state.model_params.fname)
+    key = get_hash(state.selected_llm)
+    state.model_params.fname=state.selected_llm
 
     if os.path.isfile(fname):
         with open(fname,"r") as f:
@@ -183,8 +185,8 @@ def render_tts_options_form(state):
 def render_assistant_template_form(state):
     state.assistant_template.name = st.text_input("Character Name",value=state.assistant_template.name)
     ROLE_OPTIONS = ["CHARACTER", "USER"]
-    state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background, max_chars=900)
-    state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality, max_chars=900)
+    state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background, max_chars=1000)
+    state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality, max_chars=1000)
     st.write("Example Dialogue")
     state.assistant_template.examples = st.data_editor(state.assistant_template.examples,
                                                         column_order=("role","content"),
@@ -195,7 +197,7 @@ def render_assistant_template_form(state):
                                                         use_container_width=True,
                                                         num_rows="dynamic",
                                                         hide_index =True)
-    state.assistant_template.greeting = st.text_input("Greeting",value=state.assistant_template.greeting,max_chars=200)
+    state.assistant_template.greeting = st.text_area("Greeting",value=state.assistant_template.greeting,max_chars=1000)
     return state
 
 def render_character_form(state):
@@ -245,7 +247,7 @@ if __name__=="__main__":
                 del state.character
                 gc_collect()
                 state.character = Character(
-                    voice_file=state.selected_character,
+                    character_file=state.selected_character,
                     model_file=state.selected_llm,
                     user=state.user,
                     device=state.device

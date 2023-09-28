@@ -90,8 +90,8 @@ def load_model_data(model_file):
 # Define a Character class
 class Character:
     # Initialize the character with a name and a voice
-    def __init__(self, voice_file, model_file, memory = 0, user="",stt_method="speecht5",device=None):
-        self.voice_file = voice_file
+    def __init__(self, character_file, model_file, memory = 0, user="",stt_method="speecht5",device=None):
+        self.character_file = character_file
         self.model_file = model_file
         self.voice_model = None
         self.stt_models = None
@@ -109,8 +109,8 @@ class Character:
         self.lock = threading.Lock()
 
         #load data
-        self.character_data = load_character_data(voice_file)
-        self.model_data = load_model_data(self.model_file)
+        self.character_data = self.load_character(self.character_file)
+        self.model_data = self.load_model(self.model_file)
         self.name = self.character_data["assistant_template"]["name"]
 
         # build context
@@ -121,6 +121,15 @@ class Character:
         self.max_memory = int(np.sqrt(self.model_data["params"]["n_ctx"]))+1
         self.context = self.build_context("")
         
+    
+    def load_character(self,fname):
+        self.character_data = load_character_data(fname)
+        return self.character_data
+
+    def load_model(self,fname):
+        self.model_data = load_model_data(fname)
+        return self.model_data
+
     def __del__(self):
         self.unload()
 
@@ -323,7 +332,7 @@ class Character:
 
     # Define a method to convert text to speech
     def text_to_speech(self, text):
-        tts_audio = generate_speech(text,method=self.character_data["tts_method"], speaker=self.name, device=config.device)
+        tts_audio = generate_speech(text,method=self.character_data["tts_method"], speaker=self.name, device=config.device, dialog_only=True)
         output_audio = vc_single(input_audio=tts_audio,**self.voice_model,**self.character_data["tts_options"])
         return output_audio
 

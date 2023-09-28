@@ -1,10 +1,9 @@
 from functools import partial
 from multiprocessing.pool import ThreadPool
 import os
-import random
 import numpy as np
 from scipy import signal
-import torch, torchcrepe, pyworld
+import torch, torchcrepe
 
 from lib.rmvpe import RMVPE
 from webui.audio import autotune_f0, pad_audio
@@ -32,9 +31,6 @@ class FeatureExtractor:
         self.device = config.device
         self.onnx = onnx
         self.f0_method_dict = {
-            "pm": self.get_pm,
-            "harvest": self.get_harvest,
-            "dio": self.get_dio,
             "rmvpe": self.get_rmvpe,
             "rmvpe_onnx": self.get_rmvpe,
             "rmvpe+": self.get_pitch_dependant_rmvpe,
@@ -122,42 +118,6 @@ class FeatureExtractor:
         f0 = f0[0].cpu().numpy()
         return f0
 
-    def get_pm(self, x, p_len, *args, **kwargs):
-        import parselmouth
-        f0 = parselmouth.Sound(x, self.sr).to_pitch_ac(
-            time_step=160 / 16000,
-            voicing_threshold=0.6,
-            pitch_floor=kwargs.get('f0_min'),
-            pitch_ceiling=kwargs.get('f0_max'),
-        ).selected_array["frequency"]
-        
-        return np.pad(
-            f0,
-            [[max(0, (p_len - len(f0) + 1) // 2), max(0, p_len - len(f0) - (p_len - len(f0) + 1) // 2)]],
-            mode="constant"
-        )
-
-    def get_harvest(self, x, *args, **kwargs):
-        f0_spectral = pyworld.harvest(
-            x.astype(np.double),
-            fs=self.sr,
-            f0_ceil=kwargs.get('f0_max'),
-            f0_floor=kwargs.get('f0_min'),
-            frame_period=1000 * kwargs.get('hop_length', 160) / self.sr,
-        )
-        return pyworld.stonemask(x.astype(np.double), *f0_spectral, self.sr)
-
-    def get_dio(self, x, *args, **kwargs):
-        f0_spectral = pyworld.dio(
-            x.astype(np.double),
-            fs=self.sr,
-            f0_ceil=kwargs.get('f0_max'),
-            f0_floor=kwargs.get('f0_min'),
-            frame_period=1000 * kwargs.get('hop_length', 160) / self.sr,
-        )
-        return pyworld.stonemask(x.astype(np.double), *f0_spectral, self.sr)
-
-
     def get_rmvpe(self, x, *args, **kwargs):
         if not hasattr(self,"model_rmvpe"):
             self.model_rmvpe = RMVPE(os.path.join(BASE_MODELS_DIR,f"rmvpe.{'onnx' if self.onnx else 'pt'}"), is_half=self.is_half, device=self.device, onnx=self.onnx)
@@ -210,9 +170,6 @@ class FeatureExtractor:
             if method not in self.f0_method_dict:
                 raise Exception(f"Method {method} not found.")
             f0 = self.f0_method_dict[method](**params)
-            if method == 'harvest' and filter_radius > 2:
-                f0 = signal.medfilt(f0, filter_radius)
-                f0 = f0[1:]  # Get rid of first frame.
             return f0
 
         with ThreadPool(get_optimal_threads()) as pool:

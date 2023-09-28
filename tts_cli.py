@@ -135,7 +135,7 @@ def __vits__(text,speaker=os.path.join(CWD,"models","VITS","pretrained_ljs.pth")
     from lib.infer_pack.text.symbols import symbols
     from lib.infer_pack.text import text_to_sequence
     from lib.infer_pack.commons import intersperse
-    from lib.train import utils
+    from lib import utils
 
     hps = utils.get_hparams_from_file(os.path.join(CWD,"models","VITS","configs","ljs_base.json"))
     def get_text(text, hps):
@@ -160,9 +160,9 @@ def __vits__(text,speaker=os.path.join(CWD,"models","VITS","pretrained_ljs.pth")
         audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.678, noise_scale_w=0.6, length_scale=1.1)[0][0,0].data.cpu().float().numpy()
     return audio, hps.data.sampling_rate
 
-def generate_speech(text, speaker=None, method="speecht5",device="cpu"):
+def generate_speech(text, speaker=None, method="speecht5",device="cpu",dialog_only=False):
     
-    text = english_cleaners(text.strip()) #clean text
+    text = english_cleaners(text.strip(),dialog_only=dialog_only) #clean text
     if text and len(text) == 0:
         return (np.zeros(0).astype(np.int16),16000)
     
