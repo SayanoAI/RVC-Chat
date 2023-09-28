@@ -1,0 +1,6 @@
+*
+!.gitignore
+!*.json
+!.index
+!.characters
+!*.txt
