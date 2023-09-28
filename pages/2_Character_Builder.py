@@ -90,8 +90,7 @@ def load_character(state):
 
 def save_model_config(state):
     fname = os.path.join(CWD,"models","LLM","config.json")
-    key = get_hash(state.selected_llm)
-    state.model_params.fname=state.selected_llm
+    key = get_hash(state.model_params.fname)
 
     if os.path.isfile(fname):
         with open(fname,"r") as f:
@@ -214,129 +213,16 @@ def render_character_form(state):
     return state
 
 if __name__=="__main__":
-    with SessionStateContext("chat",init_state()) as state:
+    with SessionStateContext("character_builder",init_state()) as state:
         
-        col1, col2 = st.columns(2)
-        if col1.button("Refresh Files"):
+        st.title("Character Builder")
+        
+        if st.button("Refresh Files"):
             state = refresh_data(state)
-        if col2.button("Unload Models",disabled=state.character is None):
-            state.character.unload()
-            del state.character
-            gc_collect()
-
-        state.user = col1.text_input("Your Name", value=state.user)
-        state.selected_character = col2.selectbox("Your Character",
-                                              options=state.characters,
-                                              index=get_index(state.characters,state.selected_character),
-                                              format_func=lambda x: os.path.basename(x))
-        state.selected_llm = col2.selectbox("Choose a language model",
-                                options=state.model_list,
-                                index=get_index(state.model_list,state.selected_llm),
-                                format_func=lambda x: os.path.basename(x))
-
-        with col1:
-            c1, c2 = st.columns(2)
-            state.device = c1.radio(
-                i18n("inference.device"),
-                disabled=not config.has_gpu,
-                options=DEVICE_OPTIONS,horizontal=True,
-                index=get_index(DEVICE_OPTIONS,state.device))
-            
-            
-            if c2.button("Start Chatting",disabled=not (state.selected_character and state.selected_llm and state.user),type="primary"):
-                del state.character
-                gc_collect()
-                state.character = Character(
-                    character_file=state.selected_character,
-                    model_file=state.selected_llm,
-                    user=state.user,
-                    device=state.device
-                )
-                state.character.load()
-                st.experimental_rerun()
-
-        chat_disabled = state.character is None or not state.character.loaded
-        if chat_disabled: st.subheader("Select your character, language model, and enter your name above to get started!")
 
         # chat settings
-        # with st.expander(f"Chat Options: character={state.selected_character} LLM={state.selected_llm}", expanded=chat_disabled):
-        #     character_tab, llm_tab = st.tabs(["Character","LLM"])
-        #     with llm_tab:
-        #         state = render_llm_form(state)
-        #     with character_tab:
-        #         state = render_character_form(state)
-        
-        if not chat_disabled:
-
-            # save/load chat history
-            save_dir = os.path.join(OUTPUT_DIR,"chat",state.character.name)
-            file_uploader_form(save_dir,title="Upload your chat history",types=["zip"])
-            state.history_file = st.selectbox("Continue a saved chat history",options=[""]+get_filenames(root=save_dir,name_filters=["json"]))
-            col1,col2, col3 = st.columns(3)
-
-            if col1.button("Save Chat",disabled=not state.character):
-                st.toast(state.character.save_history())
-
-            if col2.button("Load Chat",disabled=not state.history_file):
-                st.toast(state.character.load_history(state.history_file))
-
-            if col3.button("Clear Chat",type="primary",disabled=state.character is None or len(state.character.messages)==0):
-                state.character.clear_chat()
-
-            # display chat messages
-            for i,msg in enumerate(state.character.messages):
-                with st.chat_message(msg["role"]):
-                    st.write(msg["content"])
-                    col1, col2, col3 = st.columns(3)
-                    if msg.get("audio"):
-                        if col1.button("Play",key=f"Play{i}"): sd.play(*msg["audio"])
-                        if col2.button("Download",key=f"Download{i}"):
-                            fname=os.path.join(OUTPUT_DIR,"chat",msg['role'],
-                                                        f"{i}_{hashlib.md5(msg['content'].encode('utf-8')).hexdigest()}.wav")
-                            if save_input_audio(fname,msg["audio"]):
-                                st.toast(f"successfully saved to: {fname}")
-                    if col3.button("Delete",key=f"Delete{i}"):
-                        st.toast(f"Deleted message: {state.character.messages.pop(i)}")
-                        st.experimental_rerun()
-
-            # container = st.container()
-            if st.button("Summarize Context"):
-                st.write(state.character.summarize_context())
-            if state.character.is_recording:
-                if st.button("Stop Voice Chat",type="primary"):
-                    state.character.is_recording=False
-                    st.experimental_rerun()
-                with st.spinner("Listening to mic..."):
-                    time.sleep(1)
-                    st.experimental_rerun()
-            elif st.button("Voice Chat (WIP)",type="secondary" ):
-                state.character.speak_and_listen()
-                st.experimental_rerun()
-            elif st.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
-                state.character.toggle_autoplay()
-
-            if prompt:=st.chat_input(disabled=chat_disabled or state.character.autoplay) or state.character.autoplay:
-                state.character.is_recording=False
-                if not state.character.autoplay:
-                    st.chat_message(state.character.user).write(prompt)
-                full_response = ""
-                with st.chat_message(state.character.name):
-                    message_placeholder = st.empty()
-                    for response in state.character.generate_text("ok, go on" if state.character.autoplay else prompt):
-                        full_response += response
-                        message_placeholder.markdown(full_response)
-                audio = state.character.text_to_speech(full_response)
-                if audio: sd.play(*audio)
-                if not state.character.autoplay:
-                    state.character.messages.append({"role": state.character.user, "content": prompt}) #add user prompt to history
-                state.character.messages.append({
-                    "role": state.character.name,
-                    "content": full_response,
-                    "audio": audio
-                    })
-                if state.character.autoplay:
-                    st.experimental_rerun()
-
-            
-            
-        
+        state.selected_character = st.selectbox("Your Character",
+                                            options=state.characters,
+                                            index=get_index(state.characters,state.selected_character),
+                                            format_func=lambda x: os.path.basename(x))
+        state = render_character_form(state)
