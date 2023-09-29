@@ -80,7 +80,9 @@ if __name__=="__main__":
             
             
             if c2.button("Start Chatting",disabled=not (state.selected_character and state.selected_llm and state.user),type="primary"):
-                if state.character: del state.character
+                if state.character:
+                    state.character.unload()
+                    del state.character
                 state.character = Character(
                     character_file=state.selected_character,
                     model_file=state.selected_llm,

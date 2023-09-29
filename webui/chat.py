@@ -105,6 +105,7 @@ class Character:
         self.recognizer = None
         self.listener = None
         self.lock = threading.Lock()
+        self.has_voice = False
 
         #load data
         self.character_data = self.load_character(self.character_file)
@@ -152,7 +153,11 @@ class Character:
             # self.summarizer = pipeline("summarization", model="facebook/bart-large-cnn",framework="pt",device=self.device)
 
             # load voice model
-            self.voice_model = get_vc(self.character_data["voice"],config=config,device=self.device)
+            try:
+                self.voice_model = get_vc(self.character_data["voice"],config=config,device=self.device)
+                self.has_voice=True
+            except Exception as e:
+                print(f"failed to load voice {e}")
             if len(self.messages)==0 and self.character_data["assistant_template"]["greeting"] and self.user:
                 greeting_message = { #add greeting message
                     "role": self.character_data["assistant_template"]["name"],
@@ -378,7 +383,7 @@ class Character:
                         full_response = ""
                         for response in self.generate_text(prompt):
                             full_response += response
-                        output_audio = self.text_to_speech(full_response)
+                        output_audio = self.text_to_speech(full_response) if self.has_voice else None
                         if output_audio: sd.play(*output_audio)
                         self.messages.append({"role": self.user, "content": prompt, "audio": input_audio}) #add user prompt to history
                         self.messages.append({
