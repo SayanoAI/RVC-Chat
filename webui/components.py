@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from types import SimpleNamespace
+from webui.utils import ObjectNamespace
 from typing import Tuple
 import streamlit as st
 import urllib.request
@@ -51,9 +51,9 @@ def initial_vocal_separation_params(folder=None):
         if os.path.isfile(config_file):
             with open(config_file,"r") as f:
                 data = json.load(f)
-                return SimpleNamespace(**data)
+                return ObjectNamespace(**data)
 
-    return SimpleNamespace(
+    return ObjectNamespace(
         preprocess_models=[],
         postprocess_models=[],
         agg=10,
@@ -103,9 +103,9 @@ def initial_voice_conversion_params(folder=None):
         if os.path.isfile(config_file):
             with open(config_file,"r") as f:
                 data = json.load(f)
-                return SimpleNamespace(**data)
+                return ObjectNamespace(**data)
             
-    return SimpleNamespace(
+    return ObjectNamespace(
         f0_up_key=0,
         f0_method=["rmvpe"],
         f0_autotune=False,

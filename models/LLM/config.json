@@ -144,12 +144,12 @@
       "n_gpu_layers": 64
     },
     "config": {
-      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
-      "chat_template": "### {role}:\n{content}",
+      "prompt_template": "You're acting as {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\nUSER: {prompt}\nCHARACTER: ",
+      "chat_template": "{role}: {content}\n",
       "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
       "mapper": {
-        "CHARACTER": "Response",
-        "USER": "Input"
+        "CHARACTER": "CHARACTER",
+        "USER": "USER"
       }
     },
     "options": {

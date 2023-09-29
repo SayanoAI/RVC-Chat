@@ -3,22 +3,25 @@ from multiprocessing.pool import ThreadPool
 from types import FunctionType
 from typing import List
 import streamlit as st
+from webui.utils import ObjectNamespace, gc_collect
+
+
+    # def __getitem__(self, name: str): return self.__getattribute__(name)
+    # def __setitem__(self, name: str, value): return self.__setattr__(name, value)
+    # def __delitem__(self, name: str): return self.__delattr__(name)
 
 class SessionStateContext:
     def __init__(self, name: str, initial_state={}):
-        self.__data__ = st.session_state.get(name,initial_state)
+        self.__data__: ObjectNamespace = st.session_state.get(name,ObjectNamespace(**initial_state))
         self.__name__ = name
-        self.__initial_state__ = {} if initial_state is None else initial_state
+        self.__initial_state__ = ObjectNamespace() if initial_state is None else initial_state
     
     def __enter__(self):
-        # print("Entering the context")
-        # print(f"Acquiring {self}")
-        return self
+        return self.__data__
+    
     def __exit__(self, *_):
-        # print(exc_type, exc_value, traceback)
-        # print("Exiting the context")
-        # print(f"Releasing {repr(self)}")
-        st.session_state[self.__name__] = self.__data__
+        if self.__name__ not in st.session_state: st.session_state[self.__name__] = self.__data__
+        gc_collect()
     
     def __dir__(self):
         return self.data.__dir__
@@ -27,44 +30,44 @@ class SessionStateContext:
     def __repr__(self):
         return f"SessionStateContext('{self.__name__}',{self.__data__})"
     
-    def __getitem__(self, name: str):
-        if name in self.__data__:
-            return self.__data__[name]
-        else:
-            return self.__getattr__(name)
+    # def __getitem__(self, name: str):
+    #     if name in self.__data__:
+    #         return self.__data__[name]
+    #     else:
+    #         return self.__getattr__(name)
         
-    def __setitem__(self, name: str, value):
-        if name in self.__data__:
-            self.__data__[name] = value
-        else:
-            self.__setattr__(name, value)
-    def __delitem__(self,name):
-        try:
-            if name in self.__data__:
-                del self.__data__[name]
-            else:
-                self.__delattr__(name)
-        except Exception as e:
-            print(e)
+    # def __setitem__(self, name: str, value):
+    #     if name in self.__data__:
+    #         self.__data__[name] = value
+    #     else:
+    #         self.__setattr__(name, value)
+    # def __delitem__(self,name):
+    #     try:
+    #         if name in self.__data__:
+    #             del self.__data__[name]
+    #         else:
+    #             self.__delattr__(name)
+    #     except Exception as e:
+    #         print(e)
         
-    def __getattr__(self, name: str):
-        if name.startswith("__") and name.endswith("__"):
-            return super().__getattr__(name)
-        else:
-            return self.__data__.get(name)
-    def __setattr__(self, name: str, value):
-        if name.startswith("__") and name.endswith("__"):
-            super().__setattr__(name, value)
-        else:
-            self.__data__[name] = value
-    def __delattr__(self,name):
-        try:
-            if name.startswith("__") and name.endswith("__"):
-                super().__delattr__(name)
-            elif name in self.__data__:
-                del self.__data__[name]
-        except:
-            pass
+    # def __getattr__(self, name: str):
+    #     if name.startswith("__") and name.endswith("__"):
+    #         return super().__getattr__(name)
+    #     else:
+    #         return self.__data__.get(name)
+    # def __setattr__(self, name: str, value):
+    #     if name.startswith("__") and name.endswith("__"):
+    #         super().__setattr__(name, value)
+    #     else:
+    #         self.__data__[name] = value
+    # def __delattr__(self,name):
+    #     try:
+    #         if name.startswith("__") and name.endswith("__"):
+    #             super().__delattr__(name)
+    #         elif name in self.__data__:
+    #             del self.__data__[name]
+    #     except:
+    #         pass
 
 class ProgressBarContext:
     def __init__(self, iter: List, func: FunctionType, text: str="", parallel=False):

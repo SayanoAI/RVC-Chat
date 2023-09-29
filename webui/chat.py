@@ -3,7 +3,7 @@ import hashlib
 import json
 import os
 import threading
-from types import SimpleNamespace
+from webui.utils import ObjectNamespace
 from llama_cpp import Llama
 import numpy as np
 from lib.model_utils import get_hash
@@ -19,11 +19,11 @@ from . import config
 from vc_infer_pipeline import get_vc, vc_single
 
 def init_model_params():
-    return SimpleNamespace(
+    return ObjectNamespace(
         fname=None,n_ctx=2048,n_gpu_layers=0
     )
 def init_model_config():
-    return SimpleNamespace(
+    return ObjectNamespace(
         # template placeholder
         prompt_template = "",
         # how dialogs appear
@@ -37,7 +37,7 @@ def init_model_config():
         }
     )
 def init_llm_options():
-    return SimpleNamespace(
+    return ObjectNamespace(
         top_k = 42,
         repeat_penalty = 1.1,
         frequency_penalty = 0.,
@@ -46,21 +46,20 @@ def init_llm_options():
         mirostat_mode = 1,
         mirostat_tau = 5.0,
         mirostat_eta = 0.1,
-        suffix = None,
         max_tokens = 256,
         temperature = .8,
         top_p = .9,
     )
     
 def init_model_data():
-    return {
-        "params": vars(init_model_params()),
-        "config": vars(init_model_config()),
-        "options": vars(init_llm_options())
-    }
+    return ObjectNamespace(
+        params = init_model_params(),
+        config = init_model_config(),
+        options = init_llm_options()
+    )
 
 def init_assistant_template():
-    return SimpleNamespace(
+    return ObjectNamespace(
         background = "",
         personality = "",
         examples = [{"role": "", "content": ""}],
@@ -97,7 +96,6 @@ class Character:
         self.stt_models = None
         self.loaded = False
         self.sample_rate = 16000 # same rate as hubert model
-        self.memory = memory
         self.messages = []
         self.user = user
         self.is_recording = False
