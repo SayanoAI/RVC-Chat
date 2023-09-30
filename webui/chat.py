@@ -175,7 +175,11 @@ class Character:
             self.loaded=False
 
     def unload(self):
-        del self.LLM, self.voice_model, self.stt_models, self.recognizer
+        if self.LLM: del self.LLM
+        if self.voice_model: del self.voice_model
+        if self.stt_models: del self.stt_models
+        if self.recognizer: del self.recognizer
+        self.LLM = self.voice_model = self.stt_models = self.recognizer = None
         gc_collect()
         self.loaded=False
         self.is_recording = False
