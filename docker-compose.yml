@@ -1,20 +1,16 @@
 version: "3.8"
 services:
-  rvc-studio:
-    image: rvc-studio:latest
+  rvc-chat:
+    image: rvc-chat:latest
     build:
       context: .
-    container_name: RVC-Studio
+    container_name: RVC-Chat
     volumes:
       - ./models:/app/models
-      - ./output:/app/output
-      - ./datasets:/app/datasets # you can use this folder in order to provide your dataset for model training
       - ./songs:/app/songs
-      - ./logs:/app/logs
       - .cache:/app/.cache
     ports:
       - 8501:8501
-      - 6006:6006
     stop_signal: SIGINT
     deploy:
       resources:

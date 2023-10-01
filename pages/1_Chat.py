@@ -51,14 +51,13 @@ def refresh_data(state):
 
 if __name__=="__main__":
     with SessionStateContext("chat",init_state()) as state:
+
+        st.title("RVC Chat")
+
         hint = st.empty()
         col1, col2, col3 = st.columns(3)
         if st.button("Refresh Files"):
             state = refresh_data(state)
-        # if col2.button("Unload Models",disabled=state.character is None):
-        #     state.character.unload()
-        #     del state.character
-        #     gc_collect()
 
         state.user = col1.text_input("Your Name", value=state.user)
         state.selected_character = col2.selectbox("Your Character",
