@@ -12,7 +12,7 @@ from tts_cli import STT_MODELS_DIR, stt_checkpoint, load_stt_models
 
 from webui.components import file_downloader, file_uploader_form
 
-from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, RVC_DOWNLOAD_LINK, RVC_MODELS, VITS_MODELS, download_link_generator
+from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, VITS_MODELS, download_link_generator
 
 CWD = get_cwd()
 
@@ -100,7 +100,7 @@ if __name__=="__main__":
                 models = load_stt_models("speecht5") #hacks the from_pretrained downloader
                 del models
                 st.experimental_rerun()
-        # generator = [(os.path.join(BASE_MODELS_DIR,"LLM",os.path.basename(link)),link) for link in LLM_MODELS]
-        # to_download = render_model_checkboxes(generator)
-        # with ProgressBarContext(to_download,file_downloader,"Downloading models") as pb:
-        #     st.button("Download All",key="download-all-chat-models",disabled=len(to_download)==0,on_click=pb.run)
+        generator = [(os.path.join(BASE_MODELS_DIR,"LLM",os.path.basename(link)),link) for link in LLM_MODELS]
+        to_download = render_model_checkboxes(generator)
+        with ProgressBarContext(to_download,file_downloader,"Downloading models") as pb:
+            st.button("Download All",key="download-all-chat-models",disabled=len(to_download)==0,on_click=pb.run)
