@@ -44,7 +44,7 @@ This project allows you to create character cards (like NAI/character.ai/tavern)
 Run `docker compose up --build` in the main project folder.
 
 ## FAQs
-* Trouble with ffmpeg/espeak? [Read this](/dist/README.md)
+* nothing yet :D
 
 ## Disclaimer
 This project is for educational and research purposes only. The generated voice overs are not intended to infringe on any copyrights or trademarks of the original songs or text. The project does not endorse or promote any illegal or unethical use of the generative AI technology. The project is not responsible for any damages or liabilities arising from the use or misuse of the generated voice overs.
