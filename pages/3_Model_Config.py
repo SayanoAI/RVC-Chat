@@ -5,8 +5,6 @@ from webui import MENU_ITEMS, get_cwd
 from webui.chat import init_llm_options, init_model_config, init_model_data, init_model_params
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
-from webui.components import initial_voice_conversion_params
-
 from lib.model_utils import get_hash
 
 from webui.contexts import SessionStateContext
@@ -46,7 +44,7 @@ def refresh_data(state):
 
 def save_model_config(state):
     fname = os.path.join(CWD,"models","LLM","config.json")
-    key = get_hash(state.model_params.fname)
+    key = get_hash(os.path.join(CWD,state.model_params.fname))
 
     if os.path.isfile(fname):
         with open(fname,"r") as f:

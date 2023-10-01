@@ -5,7 +5,7 @@ import platform
 from pytube import YouTube
 import streamlit as st
 from webui import MENU_ITEMS, get_cwd
-st.set_page_config("RVC Studio",layout="centered",menu_items=MENU_ITEMS)
+st.set_page_config("RVC Chat",layout="centered",menu_items=MENU_ITEMS)
 
 
 from tts_cli import STT_MODELS_DIR, stt_checkpoint, load_stt_models

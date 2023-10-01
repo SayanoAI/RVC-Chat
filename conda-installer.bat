@@ -47,6 +47,6 @@ if %errorlevel% == 0 (
     
     CALL conda-start.bat
 ) else (
-    echo Something went wrong. Please check the installation log or submit a ticket at: https://github.com/SayanoAI/RVC-Studio/issues
+    echo Something went wrong. Please check the installation log or submit a ticket at: https://github.com/SayanoAI/RVC-Chat/issues
 )
 pause
