@@ -170,9 +170,9 @@ class Character:
                 self.messages.append(greeting_message)
             
             self.loaded=True
+            return "Successfully loaded character!"
         except Exception as e:
-            print(e)
-            self.loaded=False
+            return f"Failed to load character: {e}"
 
     def unload(self):
         if self.LLM: del self.LLM

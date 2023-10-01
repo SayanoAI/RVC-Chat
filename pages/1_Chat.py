@@ -89,8 +89,7 @@ if __name__=="__main__":
                     user=state.user,
                     device=state.device
                 )
-                state.character.load()
-                st.experimental_rerun()
+                st.toast(state.character.load())                
 
         chat_disabled = state.character is None or not state.character.loaded
         if chat_disabled: hint.warning("Enter your name, select your character, and choose a language model to get started!")

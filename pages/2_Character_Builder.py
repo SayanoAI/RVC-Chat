@@ -37,23 +37,26 @@ def init_state():
     return state
 
 def refresh_data(state):
-    state.model_list = get_model_list()
     state.voice_models = get_voice_list()
     state.characters = get_character_list()
     return state
 
 def save_character(state):
-    character_file = os.path.join(CWD,"models","Characters",f"{state.assistant_template.name}.json")
-    with open(character_file,"w") as f:
-        loaded_state = {
-            "assistant_template": state.assistant_template,
-            "tts_options": state.tts_options,
-            "voice": state.voice_model,
-            "tts_method": state.tts_method
-        }
-        f.write(json.dumps(loaded_state,indent=2))
-    state = refresh_data(state)
-    if state.character: state.character.load_character(character_file)
+    try:
+        character_file = os.path.join(CWD,"models","Characters",f"{state.assistant_template.name}.json")
+        with open(character_file,"w") as f:
+            loaded_state = {
+                "assistant_template": state.assistant_template,
+                "tts_options": state.tts_options,
+                "voice": state.voice_model,
+                "tts_method": state.tts_method
+            }
+            f.write(json.dumps(loaded_state,indent=2))
+        state = refresh_data(state)
+        if state.character: state.character.load_character(character_file)
+        st.toast(f"Successfully saved character: {character_file}")
+    except Exception as e:
+        st.toast(f"Failed to save character: {e}")
     return state
 
 def load_character(state):
@@ -124,7 +127,6 @@ def render_character_form(state):
             state = render_assistant_template_form(state)
         if st.form_submit_button("Save"):
             state = save_character(state)
-            st.experimental_rerun()
     
     return state
 

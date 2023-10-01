@@ -38,29 +38,31 @@ def init_state():
 
 def refresh_data(state):
     state.model_list = get_model_list()
-    state.voice_models = get_voice_list()
-    state.characters = get_character_list()
     return state
 
 def save_model_config(state):
-    fname = os.path.join(CWD,"models","LLM","config.json")
-    key = get_hash(os.path.join(CWD,state.model_params.fname))
+    try:
+        fname = os.path.join(CWD,"models","LLM","config.json")
+        key = get_hash(os.path.join(CWD,"models","LLM",os.path.basename(state.model_params.fname)))
 
-    if os.path.isfile(fname):
-        with open(fname,"r") as f:
-            data = json.load(f)
-    else:
-        data = {}
+        if os.path.isfile(fname):
+            with open(fname,"r") as f:
+                data = json.load(f)
+        else:
+            data = {}
 
-    with open(fname,"w") as f:
-        data[key] = {
-            "version": 2,
-            "params": state.model_params,
-            "config": state.model_config,
-            "options": state.llm_options,
-        }
-        f.write(json.dumps(data,indent=2))
-    state = refresh_data(state)
+        with open(fname,"w") as f:
+            data[key] = {
+                "version": 2,
+                "params": state.model_params,
+                "config": state.model_config,
+                "options": state.llm_options,
+            }
+            f.write(json.dumps(data,indent=2))
+        state = refresh_data(state)
+        st.toast(f"Successfully saved config: {key}")
+    except Exception as e:
+        st.toast(f"Failed to save config: {e}")
     return state
 
 def load_model_config(state):
@@ -114,7 +116,6 @@ def render_llm_form(state):
 
         if st.form_submit_button("Save Configs",disabled=not state.selected_llm):
             state = save_model_config(state)
-            st.experimental_rerun()
     return state
 
 if __name__=="__main__":
