@@ -5,18 +5,18 @@ import torch
 from multiprocessing import cpu_count
 
 
-def use_fp32_config():
-    for config_file in [
-        "32k.json",
-        "40k.json",
-        "48k.json",
-        "48k_v2.json",
-        "32k_v2.json",
-    ]:
-        with open(f"configs/{config_file}", "r") as f:
-            strr = f.read().replace("true", "false")
-        with open(f"configs/{config_file}", "w") as f:
-            f.write(strr)
+# def use_fp32_config():
+#     for config_file in [
+#         "32k.json",
+#         "40k.json",
+#         "48k.json",
+#         "48k_v2.json",
+#         "32k_v2.json",
+#     ]:
+#         with open(f"config/{config_file}", "r") as f:
+#             strr = f.read().replace("true", "false")
+#         with open(f"configs/{config_file}", "w") as f:
+#             f.write(strr)
 
 
 class Config:
@@ -97,7 +97,7 @@ class Config:
             ):
                 print("Found GPU", self.gpu_name, ", force to fp32")
                 self.is_half = False
-                use_fp32_config()
+                # use_fp32_config()
             else:
                 print("Found GPU", self.gpu_name)
             self.gpu_mem = int(
@@ -111,12 +111,12 @@ class Config:
             print("No supported Nvidia GPU found")
             self.device = self.instead = "mps"
             self.is_half = False
-            use_fp32_config()
+            # use_fp32_config()
         else:
             print("No supported Nvidia GPU found")
             self.device = self.instead = "cpu"
             self.is_half = False
-            use_fp32_config()
+            # use_fp32_config()
 
         if self.n_cpu == 0:
             self.n_cpu = cpu_count()

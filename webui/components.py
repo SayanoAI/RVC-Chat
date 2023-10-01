@@ -46,7 +46,7 @@ def active_subprocess_list():
 
 def initial_vocal_separation_params(folder=None):
     if folder:
-        config_file = os.path.join(os.getcwd(),"configs",folder,"vocal_separation_params.json")
+        config_file = os.path.join(os.getcwd(),"config",folder,"vocal_separation_params.json")
         os.makedirs(os.path.dirname(config_file),exist_ok=True)
         if os.path.isfile(config_file):
             with open(config_file,"r") as f:
@@ -62,7 +62,7 @@ def initial_vocal_separation_params(folder=None):
         use_cache=True,
     )
 def save_vocal_separation_params(folder,data):
-    config_file = os.path.join(os.getcwd(),"configs",folder,"vocal_separation_params.json")
+    config_file = os.path.join(os.getcwd(),"config",folder,"vocal_separation_params.json")
     os.makedirs(os.path.dirname(config_file),exist_ok=True)
     with open(config_file,"w") as f:
         return f.write(json.dumps(data,indent=2))
@@ -98,7 +98,7 @@ def vocal_separation_form(state):
 
 def initial_voice_conversion_params(folder=None):
     if folder:
-        config_file = os.path.join(os.getcwd(),"configs",folder,"voice_conversion_params.json")
+        config_file = os.path.join(os.getcwd(),"config",folder,"voice_conversion_params.json")
         os.makedirs(os.path.dirname(config_file),exist_ok=True)
         if os.path.isfile(config_file):
             with open(config_file,"r") as f:
@@ -117,7 +117,7 @@ def initial_voice_conversion_params(folder=None):
         protect=0.2,
         )
 def save_voice_conversion_params(folder,data):
-    config_file = os.path.join(os.getcwd(),"configs",folder,"voice_conversion_params.json")
+    config_file = os.path.join(os.getcwd(),"config",folder,"voice_conversion_params.json")
     os.makedirs(os.path.dirname(config_file),exist_ok=True)
     with open(config_file,"w") as f:
         return f.write(json.dumps(data,indent=2))
