@@ -1,8 +1,10 @@
 from datetime import datetime
+from functools import lru_cache
 import hashlib
 import json
 import os
 import threading
+import weakref
 from webui.utils import ObjectNamespace
 from llama_cpp import Llama
 import numpy as np
@@ -12,65 +14,101 @@ from webui.audio import bytes_to_audio, load_input_audio, save_input_audio
 from webui.downloader import BASE_MODELS_DIR, OUTPUT_DIR
 import sounddevice as sd
 from webui.sumy_summarizer import get_summary
-
 from webui.utils import gc_collect
+from webui.vector_db import VectorDB
 from . import config
-
 from vc_infer_pipeline import get_vc, vc_single
 
-def init_model_params():
-    return ObjectNamespace(
+# A cache that stores weak references to large objects
+LLM_CACHE = weakref.WeakValueDictionary(ObjectNamespace())
+
+def init_model_params(): return ObjectNamespace(
         fname=None,n_ctx=2048,n_gpu_layers=0
     )
-def init_model_config():
-    return ObjectNamespace(
-        # template placeholder
+def init_model_config(): return ObjectNamespace(
         prompt_template = "",
-        # how dialogs appear
         chat_template = "",
-        # Default system instructions
         instruction = "",
-        # maps role names
         mapper={
             "CHARACTER": "",
             "USER": ""
         }
     )
-def init_llm_options():
-    return ObjectNamespace(
+def init_llm_options(): return ObjectNamespace(
         top_k = 42,
         repeat_penalty = 1.1,
         frequency_penalty = 0.,
         presence_penalty = 0.,
-        tfs_z = 1.0,
-        mirostat_mode = 1,
-        mirostat_tau = 5.0,
-        mirostat_eta = 0.1,
-        max_tokens = 256,
+        mirostat_mode = 2,
+        mirostat_tau = 4.0,
+        mirostat_eta = 0.2,
+        max_tokens = 1024,
         temperature = .8,
         top_p = .9,
     )
-    
-def init_model_data():
-    return ObjectNamespace(
+def init_model_data(): return ObjectNamespace(
         params = init_model_params(),
         config = init_model_config(),
         options = init_llm_options()
     )
-
-def init_assistant_template():
-    return ObjectNamespace(
+def init_assistant_template(): return ObjectNamespace(
         background = "",
         personality = "",
+        appearance = "",
         examples = [{"role": "", "content": ""}],
         greeting = "",
         name = ""
     )
+def init_tts_options(): return ObjectNamespace(
+        f0_up_key=0,
+        f0_method=["rmvpe"],
+        f0_autotune=False,
+        merge_type="median",
+        index_rate=.75,
+        filter_radius=3,
+        resample_sr=0,
+        rms_mix_rate=.2,
+        protect=0.2,
+        )
+def init_character_data():
+    return ObjectNamespace(
+        assistant_template = init_assistant_template(),
+        tts_options = init_tts_options(),
+    )
+
+def is_chub_card(data): return all([key in data for key in ["first_mes", "mes_example","description"]])
+def import_chub_card(data):
+    def parse_example(mes_example):
+        examples = []
+        for ex in mes_example.replace("<START>","").split("\n"):
+            msg = ex.strip().split(":")
+            if len(msg)<2: continue
+            role = msg[0]
+            content = " ".join(msg[1:])
+            if len(content)>1: examples.append({
+                "role": "USER" if role=="{{user}}" else "CHARACTER",
+                "content": content
+            })
+        return examples
+
+    new_data = init_character_data()
+    new_data["assistant_template"].update(ObjectNamespace(
+        background = data["description"].replace("{{char}}","{name}").replace("{{user}}","{user}"),
+        personality = data["personality"],
+        greeting = data["first_mes"].replace("{{char}}","{name}").replace("{{user}}","{user}"),
+        name = data["name"],
+        examples = parse_example(data["mes_example"])
+    ))
+    return new_data
 
 def load_character_data(fname):
+    print(fname)
     with open(fname,"r") as f:
-        loaded_state = json.load(f)
-    return loaded_state
+        data = json.load(f)
+        print(data)
+        loaded_state = ObjectNamespace(**data)
+    print(loaded_state)
+    return import_chub_card(loaded_state) if is_chub_card(loaded_state) else loaded_state
 
 def load_model_data(model_file):
     fname = os.path.join(BASE_MODELS_DIR,"LLM","config.json")
@@ -78,13 +116,34 @@ def load_model_data(model_file):
     model_data = init_model_data()
 
     with open(fname,"r") as f:
-        data = json.load(f) if os.path.isfile(fname) else model_data
+        data = ObjectNamespace(**json.load(f)) if os.path.isfile(fname) else model_data
         if key in data:
             model_data["params"].update(data[key]["params"])
             model_data["config"].update(data[key]["config"])
             model_data["options"].update(data[key]["options"])
 
     return model_data
+
+def get_llm(fname,n_ctx,n_gpu_layers,verbose=False,context=""):
+    key = str(hash(fname))
+
+    if key in LLM_CACHE:
+        return LLM_CACHE[key]
+    
+    # clear cache
+    LLM_CACHE.clear()
+    gc_collect()
+
+    # load LLM
+    LLM = Llama(fname,n_ctx=n_ctx,n_gpu_layers=n_gpu_layers,verbose=verbose)
+    LLM.create_completion(context,max_tokens=1) #preload
+    LLM_CACHE[key] = LLM
+    
+    return LLM
+
+@lru_cache(1)
+def get_character(character_file, model_file, memory = 0, user="",stt_method="speecht5",device=None):
+    return Character(character_file, model_file, memory, user,stt_method,device)
 
 # Define a Character class
 class Character:
@@ -106,6 +165,7 @@ class Character:
         self.listener = None
         self.lock = threading.Lock()
         self.has_voice = False
+        self.ltm = VectorDB(character_file)
 
         #load data
         self.character_data = self.load_character(self.character_file)
@@ -130,6 +190,7 @@ class Character:
         return self.model_data
 
     def __del__(self):
+        del self.ltm, self.messages
         self.unload()
 
     def stop_listening(self):
@@ -142,15 +203,14 @@ class Character:
 
         try:
             # load LLM first
-            self.LLM = Llama(self.model_file,
+            self.LLM = get_llm(self.model_file,
                     n_ctx=self.model_data["params"]["n_ctx"],
                     n_gpu_layers=self.model_data["params"]["n_gpu_layers"],
-                    verbose=verbose
+                    verbose=verbose,
+                    context=self.context
                     )
             self.context_size = len(self.LLM.tokenize(self.context.encode("utf-8")))
             self.free_tokens = self.model_data["params"]["n_ctx"] - self.context_size
-            self.LLM.create_completion(self.context,max_tokens=1) #preload
-            # self.summarizer = pipeline("summarization", model="facebook/bart-large-cnn",framework="pt",device=self.device)
 
             # load voice model
             try:
@@ -296,18 +356,23 @@ class Character:
             self.context_index+=self.memory
             self.context_summary = self.summarize_context() #summarizes the past
         
-
         # Concatenate chat history and system template
+        history = self.ltm.get_query(prompt,n_results=self.memory)
+        if len(history): print(history)
+
         examples = [
             model_config["chat_template"].format(role=model_config["mapper"][ex["role"]],content=ex["content"])
                 for ex in assistant_template["examples"] if ex["role"] and ex["content"]]+[self.context_summary]+[
             model_config["chat_template"].format(role=chat_mapper[ex["role"]],content=ex["content"])
                 for ex in self.messages[self.context_index:]
-            ] 
+            ] + [
+                model_config["chat_template"].format(role=chat_mapper[ex["metadata"]["role"]],content=ex["metadata"]["content"])
+                for ex in history
+            ]
             
         instruction = model_config["instruction"].format(name=assistant_template["name"],user=self.user)
-        persona = f"{assistant_template['background']} {assistant_template['personality']}"
-        context = "\n".join(examples)
+        persona = f"{assistant_template['background']} {assistant_template['personality']}".format(name=assistant_template["name"],user=self.user)
+        context = "\n".join(examples).format(name=assistant_template["name"],user=self.user)
         
         chat_history_with_template = model_config["prompt_template"].format(
             context=context,
@@ -334,6 +399,10 @@ class Character:
         num = int(np.sqrt(self.memory))+1
 
         completion = get_summary(history,num_sentences=num)
+
+        for ex in self.messages[-self.memory:]:
+            self.ltm.add_documents(document=ex["content"],metadata={"role": ex["role"], "content": ex["content"]})
+        
         print(completion)
         return completion
 

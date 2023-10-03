@@ -4,11 +4,7 @@ from types import FunctionType
 from typing import List
 import streamlit as st
 from webui.utils import ObjectNamespace, gc_collect
-
-
-    # def __getitem__(self, name: str): return self.__getattribute__(name)
-    # def __setitem__(self, name: str, value): return self.__setattr__(name, value)
-    # def __delitem__(self, name: str): return self.__delattr__(name)
+import weakref
 
 class SessionStateContext:
     def __init__(self, name: str, initial_state={}):

@@ -1,22 +1,20 @@
 import os
 import streamlit as st
 from webui import MENU_ITEMS, config, get_cwd, i18n, DEVICE_OPTIONS
-from webui.chat import Character
+from webui.chat import Character, get_character
 from webui.downloader import OUTPUT_DIR
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
-from webui.audio import save_input_audio
 from webui.components import file_uploader_form
 
 import sounddevice as sd
-from lib.model_utils import get_hash
 
 from webui.contexts import SessionStateContext
 
 import time
 from webui.utils import ObjectNamespace
 
-from webui.utils import gc_collect, get_filenames, get_index, get_optimal_torch_device
+from webui.utils import get_filenames, get_index, get_optimal_torch_device
 
 CWD = get_cwd()
 
@@ -39,6 +37,7 @@ def init_state():
         model_list=get_model_list(),
         messages = [],
         user = "",
+        memory=10,
         device=get_optimal_torch_device(),
     )
     return state
@@ -80,10 +79,13 @@ if __name__=="__main__":
             
             if c2.button("Start Chatting",disabled=not (state.selected_character and state.selected_llm and state.user),type="primary"):
                 if state.character:
-                    state.character.unload()
-                    state.character.load_model(state.selected_llm)
                     state.character.load_character(state.selected_character)
-                else: state.character = Character(
+                    state.character.user = state.user
+                    if state.character.model_file!=state.selected_llm:
+                        state.character.unload()
+                        state.character.load_model(state.selected_llm)
+                        state.character.load()
+                else: state.character = get_character(
                     character_file=state.selected_character,
                     model_file=state.selected_llm,
                     user=state.user,

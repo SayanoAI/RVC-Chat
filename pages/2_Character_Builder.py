@@ -2,7 +2,7 @@ import json
 import os
 import streamlit as st
 from webui import MENU_ITEMS, TTS_MODELS, get_cwd, i18n
-from webui.chat import init_assistant_template
+from webui.chat import init_assistant_template, init_tts_options, load_character_data
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.components import initial_voice_conversion_params, voice_conversion_form
@@ -32,7 +32,7 @@ def init_state():
         voice_models=get_voice_list(),
         characters=get_character_list(),
         assistant_template=init_assistant_template(),
-        tts_options=initial_voice_conversion_params(),
+        tts_options=init_tts_options(),
     )
     return state
 
@@ -60,24 +60,15 @@ def save_character(state):
     return state
 
 def load_character(state):
-    with open(state.selected_character,"r") as f:
-        loaded_state = json.load(f)
-        state.assistant_template = ObjectNamespace(**loaded_state["assistant_template"])
-        
-        state.tts_options = vars(state.tts_options)
-        state.tts_options.update(loaded_state["tts_options"])
-        state.tts_options = ObjectNamespace(**state.tts_options)
-        state.voice_model = loaded_state["voice"]
-        state.tts_method = loaded_state["tts_method"]
+    loaded_state = load_character_data(state.selected_character)
+    state.assistant_template = ObjectNamespace(**loaded_state["assistant_template"])
+    state.tts_options = vars(state.tts_options)
+    state.tts_options.update(loaded_state["tts_options"])
+    state.tts_options = ObjectNamespace(**state.tts_options)
+    state.voice_model = loaded_state["voice"]
+    state.tts_method = loaded_state["tts_method"]
     state = refresh_data(state)
     return state
-
-def render_model_params_form(state):
-    state.model_params.n_ctx = st.slider("Max Context Length", min_value=512, max_value=4096, step=512, value=state.model_params.n_ctx)
-    state.model_params.n_gpu_layers = st.slider("GPU Layers", min_value=0, max_value=64, step=4, value=state.model_params.n_gpu_layers)
-    state.llm_options.max_tokens = st.slider("New Tokens",min_value=24,max_value=256,step=8,value=state.llm_options.max_tokens)
-    return state
-
 
 def render_tts_options_form(state):
 
@@ -100,8 +91,9 @@ def render_tts_options_form(state):
 def render_assistant_template_form(state):
     state.assistant_template.name = st.text_input("Character Name",value=state.assistant_template.name)
     ROLE_OPTIONS = ["CHARACTER", "USER"]
-    state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background, max_chars=1000)
-    state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality, max_chars=1000)
+    state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background)
+    state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality)
+    state.assistant_template.appearance = st.text_area("Appearance", value=state.assistant_template.appearance)
     st.write("Example Dialogue")
     state.assistant_template.examples = st.data_editor(state.assistant_template.examples,
                                                         column_order=("role","content"),
@@ -112,7 +104,7 @@ def render_assistant_template_form(state):
                                                         use_container_width=True,
                                                         num_rows="dynamic",
                                                         hide_index =True)
-    state.assistant_template.greeting = st.text_area("Greeting",value=state.assistant_template.greeting,max_chars=1000)
+    state.assistant_template.greeting = st.text_area("Greeting",value=state.assistant_template.greeting)
     return state
 
 def render_character_form(state):

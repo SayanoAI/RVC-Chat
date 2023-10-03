@@ -16,6 +16,8 @@ rem Activate environment
 CALL conda activate %ENV_NAME%
 
 if %errorlevel% == 0 (
+    rem ensure cublas is used
+    SET CMAKE_ARGS="-DLLAMA_CUBLAS=on"
     rem install packages
     CALL pip install -r requirements.txt
     CALL streamlit run Home.py

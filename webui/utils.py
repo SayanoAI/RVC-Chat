@@ -15,7 +15,7 @@ CWD = get_cwd()
 
 class ObjectNamespace(dict):
     def __init__(self,**kwargs): super().__init__(kwargs)
-    def __missing__(self): return None
+    def __missing__(self, name: str): return None
     def get(self, name: str, default_value=None): return self.__getitem__(name) if name in self.keys() else default_value
     def __getattr__(self, name: str): return self.__getitem__(name) if name in self.keys() else None
     def __setattr__(self, name: str, value): return self.__setitem__(name, value)
@@ -62,9 +62,6 @@ def get_index(arr,value):
 def gc_collect():
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    # import streamlit as st
-    # st.cache_resource.clear()
-    # st.cache_data.clear()
     gc.collect()
 
 # def lazyload(name):

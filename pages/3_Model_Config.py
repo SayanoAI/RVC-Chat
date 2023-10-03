@@ -100,10 +100,24 @@ def render_model_config_form(state):
                                                         hide_index=False)
     return state
 
+def render_llm_options_form(state):
+    state.llm_options.top_k = st.slider("top_k",min_value=1,max_value=50,step=1,value=state.llm_options.top_k)
+    state.llm_options.repeat_penalty = st.slider("repeat_penalty",min_value=0.0,max_value=2.0,step=.1,value=state.llm_options.repeat_penalty)
+    state.llm_options.frequency_penalty = st.slider("frequency_penalty",min_value=0.0,max_value=2.0,step=.1,value=state.llm_options.frequency_penalty)
+    state.llm_options.presence_penalty = st.slider("presence_penalty",min_value=0.0,max_value=2.0,step=.1,value=state.llm_options.presence_penalty)
+    state.llm_options.mirostat_mode = st.slider("mirostat_mode",min_value=0,max_value=3,step=1,value=state.llm_options.mirostat_mode)
+    state.llm_options.mirostat_tau = st.slider("mirostat_tau",min_value=0.0,max_value=5.0,step=.1,value=state.llm_options.mirostat_tau)
+    state.llm_options.mirostat_eta = st.slider("mirostat_eta",min_value=0.0,max_value=2.0,step=.1,value=state.llm_options.mirostat_eta)
+    state.llm_options.max_tokens = st.slider("max_tokens",min_value=24,max_value=1024,step=1,value=state.llm_options.max_tokens)
+    state.llm_options.temperature = st.slider("temperature",min_value=0.,max_value=1.,step=.01,value=state.llm_options.temperature)
+    state.llm_options.top_p = st.slider("top_p",min_value=0.,max_value=1.,step=.01,value=state.llm_options.top_p)
+    
+    return state
+
 def render_model_params_form(state):
     state.model_params.n_ctx = st.slider("Max Context Length", min_value=512, max_value=4096, step=512, value=state.model_params.n_ctx)
     state.model_params.n_gpu_layers = st.slider("GPU Layers", min_value=0, max_value=64, step=4, value=state.model_params.n_gpu_layers)
-    state.llm_options.max_tokens = st.slider("New Tokens",min_value=24,max_value=256,step=8,value=state.llm_options.max_tokens)
+    
     return state
 
 def render_llm_form(state):
@@ -113,6 +127,9 @@ def render_llm_form(state):
     with st.form("model.loader"):
         state = render_model_params_form(state)
         state = render_model_config_form(state)
+
+        with st.expander("LLM Options"):
+            state = render_llm_options_form(state)
 
         if st.form_submit_button("Save Configs",disabled=not state.selected_llm):
             state = save_model_config(state)
