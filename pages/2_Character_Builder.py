@@ -5,7 +5,7 @@ from webui import MENU_ITEMS, TTS_MODELS, get_cwd, i18n
 from webui.chat import init_assistant_template, init_tts_options, load_character_data
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
-from webui.components import initial_voice_conversion_params, voice_conversion_form
+from webui.components import voice_conversion_form
 
 from webui.contexts import SessionStateContext
 
@@ -62,9 +62,8 @@ def save_character(state):
 def load_character(state):
     loaded_state = load_character_data(state.selected_character)
     state.assistant_template = ObjectNamespace(**loaded_state["assistant_template"])
-    state.tts_options = vars(state.tts_options)
-    state.tts_options.update(loaded_state["tts_options"])
-    state.tts_options = ObjectNamespace(**state.tts_options)
+    state.tts_options = ObjectNamespace(**loaded_state["tts_options"])
+    # state.tts_options = ObjectNamespace(**state.tts_options)
     state.voice_model = loaded_state["voice"]
     state.tts_method = loaded_state["tts_method"]
     state = refresh_data(state)
@@ -94,6 +93,7 @@ def render_assistant_template_form(state):
     state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background)
     state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality)
     state.assistant_template.appearance = st.text_area("Appearance", value=state.assistant_template.appearance)
+    state.assistant_template.scenario = st.text_area("Scenario", value=state.assistant_template.scenario)
     st.write("Example Dialogue")
     state.assistant_template.examples = st.data_editor(state.assistant_template.examples,
                                                         column_order=("role","content"),

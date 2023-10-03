@@ -8,11 +8,13 @@ import weakref
 
 class SessionStateContext:
     def __init__(self, name: str, initial_state={}):
-        self.__data__: ObjectNamespace = st.session_state.get(name,ObjectNamespace(**initial_state))
+        self.__data__ = ObjectNamespace(**initial_state)
         self.__name__ = name
         self.__initial_state__ = ObjectNamespace() if initial_state is None else initial_state
     
     def __enter__(self):
+        if self.__name__ in st.session_state: return st.session_state[self.__name__]
+        st.session_state[self.__name__] = self.__data__
         return self.__data__
     
     def __exit__(self, *_):
@@ -25,45 +27,6 @@ class SessionStateContext:
         return str(self.__data__)
     def __repr__(self):
         return f"SessionStateContext('{self.__name__}',{self.__data__})"
-    
-    # def __getitem__(self, name: str):
-    #     if name in self.__data__:
-    #         return self.__data__[name]
-    #     else:
-    #         return self.__getattr__(name)
-        
-    # def __setitem__(self, name: str, value):
-    #     if name in self.__data__:
-    #         self.__data__[name] = value
-    #     else:
-    #         self.__setattr__(name, value)
-    # def __delitem__(self,name):
-    #     try:
-    #         if name in self.__data__:
-    #             del self.__data__[name]
-    #         else:
-    #             self.__delattr__(name)
-    #     except Exception as e:
-    #         print(e)
-        
-    # def __getattr__(self, name: str):
-    #     if name.startswith("__") and name.endswith("__"):
-    #         return super().__getattr__(name)
-    #     else:
-    #         return self.__data__.get(name)
-    # def __setattr__(self, name: str, value):
-    #     if name.startswith("__") and name.endswith("__"):
-    #         super().__setattr__(name, value)
-    #     else:
-    #         self.__data__[name] = value
-    # def __delattr__(self,name):
-    #     try:
-    #         if name.startswith("__") and name.endswith("__"):
-    #             super().__delattr__(name)
-    #         elif name in self.__data__:
-    #             del self.__data__[name]
-    #     except:
-    #         pass
 
 class ProgressBarContext:
     def __init__(self, iter: List, func: FunctionType, text: str="", parallel=False):

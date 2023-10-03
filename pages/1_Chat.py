@@ -1,20 +1,16 @@
 import os
+import weakref
 import streamlit as st
 from webui import MENU_ITEMS, config, get_cwd, i18n, DEVICE_OPTIONS
-from webui.chat import Character, get_character
+from webui.chat import Character
 from webui.downloader import OUTPUT_DIR
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.components import file_uploader_form
-
 import sounddevice as sd
-
 from webui.contexts import SessionStateContext
-
 import time
-from webui.utils import ObjectNamespace
-
-from webui.utils import get_filenames, get_index, get_optimal_torch_device
+from webui.utils import get_filenames, get_index, get_optimal_torch_device, ObjectNamespace, gc_collect, get_cache
 
 CWD = get_cwd()
 
@@ -38,6 +34,7 @@ def init_state():
         messages = [],
         user = "",
         memory=10,
+        character=None,
         device=get_optimal_torch_device(),
     )
     return state
@@ -46,7 +43,29 @@ def refresh_data(state):
     state.model_list = get_model_list()
     state.voice_models = get_voice_list()
     state.characters = get_character_list()
+    gc_collect()
     return state
+
+# A cache that stores weak references to large objects
+CHARACTER_CACHE = get_cache("CHARACTER_CACHE")
+
+@st.cache_resource
+def get_character(_state):
+    key = "character"
+
+    if key in CHARACTER_CACHE and CHARACTER_CACHE[key]:
+        return CHARACTER_CACHE[key]
+
+    character = Character(
+        character_file=_state.get("selected_character"),
+        model_file=_state.get("selected_llm"),
+        user=_state.get("user"),
+        device=_state.get("device")
+    )
+    
+    CHARACTER_CACHE[key] = character
+    _state.character = weakref.ref(character)
+    return _state
 
 if __name__=="__main__":
     with SessionStateContext("chat",init_state()) as state:
@@ -54,12 +73,13 @@ if __name__=="__main__":
         st.title("RVC Chat")
 
         hint = st.empty()
-        col1, col2, col3 = st.columns(3)
+
         if st.button("Refresh Files"):
             state = refresh_data(state)
-
+        col1, col2, col3 = st.columns(3)
+        
         state.user = col1.text_input("Your Name", value=state.user)
-        state.selected_character = col2.selectbox("Your Character",
+        state.selected_character = col2.selectbox("Your state.character",
                                               options=state.characters,
                                               index=get_index(state.characters,state.selected_character),
                                               format_func=lambda x: os.path.basename(x))
@@ -67,7 +87,7 @@ if __name__=="__main__":
                                 options=state.model_list,
                                 index=get_index(state.model_list,state.selected_llm),
                                 format_func=lambda x: os.path.basename(x))
-
+        
         with col1:
             c1, c2 = st.columns(2)
             state.device = c1.radio(
@@ -76,27 +96,24 @@ if __name__=="__main__":
                 options=DEVICE_OPTIONS,horizontal=True,
                 index=get_index(DEVICE_OPTIONS,state.device))
             
-            
             if c2.button("Start Chatting",disabled=not (state.selected_character and state.selected_llm and state.user),type="primary"):
-                if state.character:
-                    state.character.load_character(state.selected_character)
-                    state.character.user = state.user
-                    if state.character.model_file!=state.selected_llm:
-                        state.character.unload()
-                        state.character.load_model(state.selected_llm)
-                        state.character.load()
-                else: state.character = get_character(
-                    character_file=state.selected_character,
-                    model_file=state.selected_llm,
-                    user=state.user,
-                    device=state.device
-                )
-                st.toast(state.character.load())                
+                with st.spinner("Loading model..."):
+                    if state.character:
+                        state.character.load_character(state.selected_character)
+                        state.character.user = state.user
+                        state.character.loaded = True
+                        
+                        if hash(state.character.model_file)!=hash(state.selected_llm):
+                            state.character.load_model(state.selected_llm)
+                            state.character.unload()
+                            st.toast(state.character.load())
+                    else:
+                        state = get_character(state)
+                        if state.character: st.toast(state.character.load())
 
         chat_disabled = state.character is None or not state.character.loaded
-        if chat_disabled: hint.warning("Enter your name, select your character, and choose a language model to get started!")
+        if chat_disabled: hint.warning("Enter your name, select your state.character, and choose a language model to get started!")
 
-        
         if not chat_disabled:
 
             # save/load chat history
@@ -107,6 +124,7 @@ if __name__=="__main__":
 
             if col1.button("Save Chat",disabled=not state.character):
                 st.toast(state.character.save_history())
+                state = refresh_data(state)
 
             if col2.button("Load Chat",disabled=not state.history_file):
                 st.toast(state.character.load_history(state.history_file))
@@ -148,7 +166,7 @@ if __name__=="__main__":
                 full_response = ""
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
-                    for response in state.character.generate_text("ok, go on" if state.character.autoplay else prompt):
+                    for response in state.character.generate_text("Continue the story" if state.character.autoplay else prompt):
                         full_response += response
                         message_placeholder.markdown(full_response)
                 audio = state.character.text_to_speech(full_response)

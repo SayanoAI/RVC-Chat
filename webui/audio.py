@@ -5,6 +5,7 @@ from typing import Union
 import numpy as np
 import librosa
 import soundfile as sf
+from pydub import AudioSegment
 
 MAX_INT16 = 32768
 SUPPORTED_AUDIO = ["mp3","flac","wav"] # ogg breaks soundfile
@@ -94,12 +95,6 @@ def merge_audio(audio1,audio2,sr=40000):
     return remix_audio((mixed,sr),to_int16=True,norm=True,to_mono=True,axis=0)
 
 def autotune_f0(f0, threshold=0.):
-    # autotuned_f0 = []
-    # for freq in f0:
-        # closest_notes = [x for x in self.note_dict if abs(x - freq) == min(abs(n - freq) for n in self.note_dict)]
-        # autotuned_f0.append(random.choice(closest_notes))
-    # for note in self.note_dict:
-    #     closest_notes = np.where((f0 - note)/note<.05,f0,note)
     print("autotuning f0 using note_dict...")
 
     autotuned_f0 = []
@@ -120,3 +115,35 @@ def autotune_f0(f0, threshold=0.):
             autotuned_f0.append(y)
     # Return the result as a numpy array
     return np.array(autotuned_f0, dtype="float32")
+
+def join_and_split_audio(list_of_dicts,role_mapper=None):
+    # Initialize an empty AudioSegment to store the combined audio
+    combined_audio = AudioSegment.empty()
+
+    # Create a list to store timestamps
+    timestamps = []
+
+    # Iterate through the list of dicts
+    for data_dict in list_of_dicts:
+        # Extract audio file name and role from the dictionary
+        audio = data_dict.get("audio")
+        role = role_mapper(data_dict.get("role")) if role_mapper else data_dict.get("role")
+        content = data_dict.get("content")
+
+        if audio is not None:
+            audio_data, sr = audio
+
+            # Load the audio file using pydub
+            audio_segment = AudioSegment(audio_data, sample_width=audio_data.dtype.itemsize, frame_rate=sr, channels=1)
+
+            # Append the audio segment to the combined audio
+            combined_audio += audio_segment
+
+            # Calculate the timestamp for the end of this segment
+            timestamp = len(combined_audio) / 1000  # Convert milliseconds to seconds
+        
+            timestamps.append({"role": role, "content": content, "timestamp": timestamp})
+        else: timestamps.append({"role": role, "content": content})
+
+    # Export the combined audio to a single file
+    return combined_audio, timestamps

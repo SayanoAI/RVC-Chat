@@ -61,3 +61,4 @@ pyaudio==0.2.13
 SpeechRecognition
 vosk
 chromadb
+pydub
