@@ -25,7 +25,9 @@
       }
     ],
     "greeting": "Hey {user}, I've been waiting for you.",
-    "name": "Mae"
+    "name": "Mae",
+    "appearance": "",
+    "scenario": ""
   },
   "tts_options": {
     "f0_up_key": 3,
