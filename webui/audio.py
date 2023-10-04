@@ -40,6 +40,7 @@ def remix_audio(input_audio,target_sr=None,norm=False,to_int16=False,resample=Fa
     if audio_max > 1: audio /= audio_max
     
     if to_int16: audio = np.clip(audio * MAX_INT16, a_min=-MAX_INT16+1, a_max=MAX_INT16-1).astype("int16")
+    else: audio = audio.astype("float32")
     print(f"after remix: shape={audio.shape}, max={audio.max()}, min={audio.min()}, mean={audio.mean()}, sr={target_sr}")
 
     return audio, target_sr
@@ -71,7 +72,9 @@ def audio_to_bytes(audio,sr,format='WAV'):
 
 def bytes_to_audio(data: Union[io.BytesIO,bytes],**kwargs):
     if type(data)==bytes: bytes_io=io.BytesIO(data)
-    else: bytes_io = data
+    else:
+        bytes_io = data
+        bytes_io.seek(0)
 
     # audio,sr = librosa.load(bytes_io)
     audio, sr = sf.read(bytes_io,**kwargs)

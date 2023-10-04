@@ -32,7 +32,7 @@ def init_state():
         characters=get_character_list(),
         model_list=get_model_list(),
         messages = [],
-        user = "",
+        user = "User",
         memory=10,
         character=None,
         device=get_optimal_torch_device(),
@@ -109,7 +109,7 @@ if __name__=="__main__":
                             st.toast(state.character.load())
                     else:
                         state = get_character(state)
-                        if state.character: st.toast(state.character.load())
+                        if state.character and not state.character.loaded: st.toast(state.character.load())
 
         chat_disabled = state.character is None or not state.character.loaded
         if chat_disabled: hint.warning("Enter your name, select your state.character, and choose a language model to get started!")
@@ -123,11 +123,13 @@ if __name__=="__main__":
             col1,col2, col3 = st.columns(3)
 
             if col1.button("Save Chat",disabled=not state.character):
-                st.toast(state.character.save_history())
+                save_dir = os.path.dirname(state.history_file) if state.history_file else None
+                st.toast(state.character.save_history(save_dir))
                 state = refresh_data(state)
 
             if col2.button("Load Chat",disabled=not state.history_file):
                 st.toast(state.character.load_history(state.history_file))
+                state.user = state.character.user
 
             if col3.button("Clear Chat",type="primary",disabled=state.character is None or len(state.character.messages)==0):
                 state.character.clear_chat()
@@ -153,9 +155,9 @@ if __name__=="__main__":
                 with st.spinner("Listening to mic..."):
                     time.sleep(1)
                     st.experimental_rerun()
-            elif st.button("Voice Chat (WIP)",type="secondary" ):
-                state.character.speak_and_listen()
-                st.experimental_rerun()
+            # elif st.button("Voice Chat (WIP)",type="secondary" ):
+            #     state.character.speak_and_listen()
+            #     st.experimental_rerun()
             elif st.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
                 state.character.toggle_autoplay()
 
@@ -166,7 +168,7 @@ if __name__=="__main__":
                 full_response = ""
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
-                    for response in state.character.generate_text("Continue the story" if state.character.autoplay else prompt):
+                    for response in state.character.generate_text("Continue the story without me" if state.character.autoplay else prompt):
                         full_response += response
                         message_placeholder.markdown(full_response)
                 audio = state.character.text_to_speech(full_response)

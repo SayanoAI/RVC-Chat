@@ -9,7 +9,7 @@ from llama_cpp import Llama
 import numpy as np
 from lib.model_utils import get_hash
 from tts_cli import generate_speech, load_stt_models, transcribe_speech
-from webui.audio import bytes_to_audio, load_input_audio
+from webui.audio import bytes_to_audio, load_input_audio, remix_audio
 from webui.downloader import BASE_MODELS_DIR, OUTPUT_DIR
 import sounddevice as sd
 from webui.utils import gc_collect
@@ -285,8 +285,8 @@ class Character:
                 greeting_message["audio"] = output_audio
         return greeting_message
 
-    def save_history(self):
-        save_dir = self.save_dir
+    def save_history(self, save_dir = None, format="wav"):
+        if not save_dir: save_dir = self.save_dir
         os.makedirs(save_dir,exist_ok=True)
         def role_mapper(role):
             if role==self.name: return "CHARACTER"
@@ -309,7 +309,8 @@ class Character:
                 message = {"role": role,"content": content}
 
                 if audio is not None:
-                    audio_data, sr = audio
+                    audio_data, sr = remix_audio(audio,to_int16=format=="wav",to_mono=True)
+                    print([audio_data.dtype,audio_data.dtype.itemsize,sr,audio_data.max()])
 
                     # Load the audio file using pydub
                     audio_segment = AudioSegment(audio_data.tobytes(), sample_width=audio_data.dtype.itemsize, frame_rate=sr, channels=1)
@@ -319,15 +320,20 @@ class Character:
                     else: combined_audio = audio_segment
 
                     # Calculate the timestamp for the end of this segment
-                    end_timestamp = len(combined_audio) / 1000  # Convert milliseconds to seconds
+                    end_timestamp = len(combined_audio)
                 
                     message["timestamp"] = [start_timestamp, end_timestamp]
                     start_timestamp = end_timestamp
                 
                 messages.append(message)
-            output_audio_filename = os.path.join(save_dir,"messages.wav")
-            combined_audio.export(output_audio_filename, format="wav")
-            text = json.dumps({"messages":messages},indent=2)
+            output_audio_filename = os.path.join(save_dir,f"messages.{format}")
+            combined_audio.export(output_audio_filename, format=format)
+            text = json.dumps({
+                "messages":messages,
+                "user":self.user,
+                "context_index": self.context_index,
+                "context_summary": self.context_summary
+            },indent=2)
             with open(os.path.join(save_dir,"messages.json"),"w") as f:
                 f.write(text)
             return f"Chat successfully saved in {save_dir}"
@@ -340,12 +346,18 @@ class Character:
         save_dir = os.path.dirname(history_file)
 
         try:
-            with open(os.path.join(history_file),"r") as f:
+            with open(history_file,"r") as f:
                 data = json.load(f)
                 saved_messages = data.get("messages",[])
+                self.user = data.get("user",self.user)
+                self.context_index = data.get("context_index",self.context_index)
+                self.context_summary = data.get("context_summary",self.context_summary)
                 
-            combined_audio_file = os.path.join(save_dir,"messages.wav")
-            if os.path.isfile(combined_audio_file): combined_audio = AudioSegment.from_wav(combined_audio_file)
+            combined_audio_file = os.path.join(save_dir,"messages")
+            print(combined_audio_file)
+            if os.path.isfile(f"{combined_audio_file}.wav"): combined_audio = AudioSegment.from_wav(f"{combined_audio_file}.wav")
+            elif os.path.isfile(f"{combined_audio_file}.mp3"): combined_audio = AudioSegment.from_mp3(f"{combined_audio_file}.mp3")
+            else: combined_audio=None
 
             for msg in saved_messages:
                 if msg["role"]=="CHARACTER": role = self.name
@@ -359,9 +371,9 @@ class Character:
                 if "audio" in msg: #legacy loading
                     fname=os.path.join(save_dir,msg["audio"])
                     message["audio"] = load_input_audio(fname)
-                elif "timestamp" in msg and combined_audio_file: #v2
+                elif "timestamp" in msg and combined_audio: #v2
                     start_timestamp,end_timestamp = msg["timestamp"]
-                    segment = combined_audio[start_timestamp*1000:end_timestamp*1000]
+                    segment = combined_audio[start_timestamp:end_timestamp]
                     with io.BytesIO() as temp_wav_file:
                         segment.export(temp_wav_file, format="wav")
                         message["audio"] = bytes_to_audio(temp_wav_file)
