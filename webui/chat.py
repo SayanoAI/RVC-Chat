@@ -28,7 +28,8 @@ def init_model_config(): return ObjectNamespace(
         mapper={
             "CHARACTER": "",
             "USER": ""
-        }
+        },
+        stop_words = ""
     )
 def init_llm_options(): return ObjectNamespace(
         top_k = 42,
@@ -84,16 +85,16 @@ def import_chub_card(data):
             content = " ".join(msg[1:])
             if len(content)>1: examples.append({
                 "role": "USER" if role=="{{user}}" else "CHARACTER",
-                "content": content
+                "content": content.replace("{{char}}","{char}").replace("{{user}}","{user}")
             })
         return examples
 
     new_data = init_character_data()
     new_data["assistant_template"].update(ObjectNamespace(
-        background = data["description"].replace("{{char}}","{name}").replace("{{user}}","{user}"),
-        personality = data["personality"],
-        scenario = data["scenario"],
-        greeting = data["first_mes"].replace("{{char}}","{name}").replace("{{user}}","{user}"),
+        background = data["description"].replace("{{char}}","{char}").replace("{{user}}","{user}"),
+        personality = data["personality"].replace("{{char}}","{char}").replace("{{user}}","{user}"),
+        scenario = data["scenario"].replace("{{char}}","{char}").replace("{{user}}","{user}"),
+        greeting = data["first_mes"].replace("{{char}}","{char}").replace("{{user}}","{user}"),
         name = data["name"],
         examples = parse_example(data["mes_example"])
     ))
@@ -141,14 +142,6 @@ def load_model_data(model_file):
                 model_data["options"].update(max_tokens = model_data["max_tokens"])
 
     return model_data
-
-def get_llm(fname,n_ctx,n_gpu_layers,verbose=False,context=""):
-
-    # load LLM
-    LLM = Llama(fname,n_ctx=n_ctx,n_gpu_layers=n_gpu_layers,verbose=verbose)
-    LLM.create_completion(context,max_tokens=1) #preload
-    
-    return LLM
 
 # Define a Character class
 class Character:
@@ -229,21 +222,11 @@ class Character:
         assert not self.loaded, "Model is already loaded"
 
         try:
-            # load LLM first
-            # self.LLM = get_llm(
-            #     self.model_file,
-            #     n_ctx=self.model_data["params"]["n_ctx"],
-            #     n_gpu_layers=self.model_data["params"]["n_gpu_layers"],
-            #     verbose=verbose,
-            #     context=self.context
-            # )
-            # load LLM
             self.LLM = Llama(self.model_file,n_ctx=self.model_data["params"]["n_ctx"],n_gpu_layers=self.model_data["params"]["n_gpu_layers"],verbose=verbose)
             self.LLM.create_completion(self.context,max_tokens=1) #preload
             print(self.LLM)
             self.context_size = len(self.LLM.tokenize(self.context.encode("utf-8")))
             self.free_tokens = self.model_data["params"]["n_ctx"] - self.context_size
-            print(self.context_size,self.free_tokens)
 
             # load voice model
             try:
@@ -293,7 +276,7 @@ class Character:
         greeting_message = {
             "role": self.character_data["assistant_template"]["name"],
             "content": self.character_data["assistant_template"]["greeting"].format(
-                name=self.character_data["assistant_template"]["name"], user=self.user
+                char=self.character_data["assistant_template"]["name"], user=self.user
             )}
         if self.has_voice:
             output_audio = self.text_to_speech(greeting_message["content"])
@@ -371,7 +354,6 @@ class Character:
                 self.context_summary = data.get("context_summary",self.context_summary)
                 
             combined_audio_file = os.path.join(save_dir,"messages")
-            print(combined_audio_file)
             if os.path.isfile(f"{combined_audio_file}.wav"): combined_audio = AudioSegment.from_wav(f"{combined_audio_file}.wav")
             elif os.path.isfile(f"{combined_audio_file}.mp3"): combined_audio = AudioSegment.from_mp3(f"{combined_audio_file}.mp3")
             else: combined_audio=None
@@ -416,7 +398,7 @@ class Character:
                 "*","\n",
                 model_config["mapper"]["USER"],
                 model_config["mapper"]["CHARACTER"]
-                ],**self.model_data["options"])
+                ]+model_config["stop_words"].split(","),**self.model_data["options"])
         
         for completion_chunk in generator:
             response = completion_chunk['choices'][0]['text']
@@ -435,7 +417,7 @@ class Character:
 
         # clear chat history if memory maxed
         if len(self.messages[self.context_index:])>self.max_memory:
-            print(f"expanding memory: {self.context_index}")
+            print(f"moving memory to ltm: {self.context_index}")
             self.update_ltm(self.messages[:self.context_index])
             self.context_index+=self.max_memory
             self.context_summary = self.summarize_context()
@@ -450,8 +432,6 @@ class Character:
         if len(history): print(history)
 
         examples = [
-            # model_config["chat_template"].format(role=model_config["mapper"][ex["role"]],content=ex["content"])
-            #     for ex in assistant_template["examples"] if ex["role"] and ex["content"]]+[self.context_summary]+[
             model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
                 for ex in self.messages[self.context_index:]
             ] + [
@@ -459,20 +439,20 @@ class Character:
                 for ex in history
             ]
             
-        instruction = model_config["instruction"].format(name=assistant_template["name"],user=self.user)
+        instruction = model_config["instruction"].format(char=assistant_template["name"],user=self.user)
         persona = "\n".join(text for text in [
             assistant_template['background'],
             assistant_template['personality'],
             assistant_template['appearance'],
             assistant_template['scenario']
-        ] if text is not None).format(name=assistant_template["name"],user=self.user)
-        context = "\n".join(examples).format(name=assistant_template["name"],user=self.user)
+        ] if text is not None).format(char=assistant_template["name"],user=self.user)
+        context = "\n".join(examples).format(char=assistant_template["name"],user=self.user)
         
         chat_history_with_template = model_config["prompt_template"].format(
             context=context,
             instruction=instruction,
             persona=persona,
-            name=assistant_template["name"],
+            char=assistant_template["name"],
             user=self.user,
             prompt=prompt
             )

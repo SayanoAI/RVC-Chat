@@ -81,6 +81,7 @@ def render_model_config_form(state):
                                                         num_rows="fixed",
                                                         disabled=["_index"],
                                                         hide_index=False)
+    state.model_config.stop_words = st.text_input("Stop Words (comma separated)",value=state.model_config.stop_words)
     return state
 
 def render_llm_options_form(state):
@@ -94,7 +95,6 @@ def render_llm_options_form(state):
     state.llm_options.max_tokens = st.slider("max_tokens",min_value=24,max_value=1024,step=1,value=state.llm_options.max_tokens)
     state.llm_options.temperature = st.slider("temperature",min_value=0.,max_value=1.,step=.01,value=state.llm_options.temperature)
     state.llm_options.top_p = st.slider("top_p",min_value=0.,max_value=1.,step=.01,value=state.llm_options.top_p)
-    
     return state
 
 def render_model_params_form(state):

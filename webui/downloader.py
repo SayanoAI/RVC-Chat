@@ -32,10 +32,8 @@ PRETRAINED_MODELS = [
     "pretrained_v2/f0D40k.pth",
     "pretrained_v2/f0G40k.pth"]
 LLM_MODELS = [
-    "https://huggingface.co/TheBloke/Airoboros-L2-7B-2.1-GGUF/resolve/main/airoboros-l2-7b-2.1.Q4_K_M.gguf",
-    "https://huggingface.co/TheBloke/Pygmalion-2-7B-GGUF/resolve/main/pygmalion-2-7b.Q4_K_M.gguf",
-    "https://huggingface.co/TheBloke/Zarablend-MX-L2-7B-GGUF/resolve/main/zarablend-mx-l2-7b.Q4_K_M.gguf",
-    "https://huggingface.co/TheBloke/MythoMax-L2-Kimiko-v2-13B-GGUF/resolve/main/mythomax-l2-kimiko-v2-13b.Q4_K_M.gguf"
+    "https://huggingface.co/TheBloke/Mistral-7B-OpenOrca-GGUF/resolve/main/mistral-7b-openorca.Q4_K_M.gguf",
+    "https://huggingface.co/TheBloke/Mythalion-13B-GGUF/resolve/main/mythalion-13b.Q4_K_M.gguf"
 ]
 STT_MODELS = [
     "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip"

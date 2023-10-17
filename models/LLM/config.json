@@ -51,9 +51,9 @@
       "n_gpu_layers": 0
     },
     "config": {
-      "prompt_template": "<<SYSTEM>>\n{name}'s Persona: {persona}\n\n{instruction}\n\n{context}\n\n<<USER>>\n{prompt}\n\n<<AIBOT>>\n",
+      "prompt_template": "<<SYSTEM>>\n{char}'s Persona: {persona}\n\n{instruction}\n\n{context}\n\n<<USER>>\n{prompt}\n\n<<AIBOT>>\n",
       "chat_template": "{role}\n{content}\n",
-      "instruction": "RP as {name} engaging in a conversation with {user}.",
+      "instruction": "RP as {char} engaging in a conversation with {user}.",
       "mapper": {
         "CHARACTER": "<<AIBOT>>",
         "USER": "<<USER>>"
@@ -64,14 +64,14 @@
       "repeat_penalty": 1.1,
       "frequency_penalty": 0.0,
       "presence_penalty": 0.0,
-      "tfs_z": 1.0,
       "mirostat_mode": 1,
       "mirostat_tau": 5.0,
       "mirostat_eta": 0.1,
-      "suffix": null,
       "max_tokens": 128,
       "temperature": 0.8,
-      "top_p": 0.9
+      "top_p": 0.9,
+      "tfs_z": 1.0,
+      "suffix": null
     }
   },
   "f3fd9ae1d16f152da3fa4034b196ea71": {
@@ -206,13 +206,14 @@
       "n_gpu_layers": 64
     },
     "config": {
-      "prompt_template": "<|im_start|>system\nYou're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n{instruction}\n{name}'s Persona: {persona}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
+      "prompt_template": "<|im_start|>system\nYou're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n{instruction}\n{char}'s Persona: {persona}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
       "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
-      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "instruction": "A chat between {user} and {char}. You will RP as {char} and respond in long sentences.",
       "mapper": {
         "CHARACTER": "assistant",
         "USER": "user"
-      }
+      },
+      "stop_words": "<|im_end|>,<|im_start|>"
     },
     "options": {
       "top_k": 42,
@@ -237,9 +238,9 @@
       "n_gpu_layers": 64
     },
     "config": {
-      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
+      "prompt_template": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{char}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
       "chat_template": "### {role}:\n{content}",
-      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "instruction": "A chat between {user} and {char}. You will RP as {char} and respond in long sentences.",
       "mapper": {
         "CHARACTER": "Response",
         "USER": "Input"
@@ -268,13 +269,14 @@
       "n_gpu_layers": 64
     },
     "config": {
-      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
+      "prompt_template": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{char}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
       "chat_template": "### {role}:\n{content}",
-      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "instruction": "A chat between {user} and {char}. You will RP as {name} and respond in long sentences.",
       "mapper": {
         "CHARACTER": "Response",
         "USER": "Input"
-      }
+      },
+      "stop_words": "<|system|>,<|user|>,<|model|>"
     },
     "options": {
       "top_k": 42,
@@ -299,9 +301,9 @@
       "n_gpu_layers": 64
     },
     "config": {
-      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
+      "prompt_template": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{char}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
       "chat_template": "### {role}:\n{content}",
-      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "instruction": "A chat between {user} and {char}. You will RP as {name} and respond in long sentences.",
       "mapper": {
         "CHARACTER": "Response",
         "USER": "Input"
