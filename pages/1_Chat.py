@@ -60,7 +60,8 @@ def get_character(_state):
         character_file=_state.get("selected_character"),
         model_file=_state.get("selected_llm"),
         user=_state.get("user"),
-        device=_state.get("device")
+        device=_state.get("device"),
+        memory=state.memory
     )
     
     CHARACTER_CACHE[key] = character
@@ -88,7 +89,9 @@ if __name__=="__main__":
                                 index=get_index(state.model_list,state.selected_llm),
                                 format_func=lambda x: os.path.basename(x))
         
-        with col1:
+        state.memory = col1.select_slider("Memory",options=range(0,22,2),value=state.memory)
+
+        with col2:
             c1, c2 = st.columns(2)
             state.device = c1.radio(
                 i18n("inference.device"),
@@ -99,6 +102,7 @@ if __name__=="__main__":
             if c2.button("Start Chatting",disabled=not (state.selected_character and state.selected_llm and state.user),type="primary"):
                 with st.spinner("Loading model..."):
                     if state.character:
+                        state.character.memory = state.memory
                         state.character.load_character(state.selected_character)
                         state.character.user = state.user
                         state.character.loaded = True
