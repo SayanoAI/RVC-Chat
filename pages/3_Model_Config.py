@@ -2,16 +2,14 @@ import json
 import os
 import streamlit as st
 from webui import MENU_ITEMS, get_cwd
-from webui.chat import init_llm_options, init_model_config, init_model_data, init_model_params
+from webui.chat import init_llm_options, init_model_config, init_model_data, init_model_params, load_model_data
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from lib.model_utils import get_hash
 
 from webui.contexts import SessionStateContext
 
-from webui.utils import ObjectNamespace
-
-from webui.utils import get_filenames, get_index
+from webui.utils import ObjectNamespace, get_filenames, get_index
 
 CWD = get_cwd()
 
@@ -66,25 +64,10 @@ def save_model_config(state):
     return state
 
 def load_model_config(state):
-    fname = os.path.join(CWD,"models","LLM","config.json")
-    key = get_hash(state.selected_llm)
-
-    with open(fname,"r") as f:
-        data = json.load(f) if os.path.isfile(fname) else {}    
-        model_data = data[key] if key in data else init_model_data()
-
-        if "version" in model_data and model_data["version"]==2:
-            state.model_params = ObjectNamespace(**model_data["params"])
-            state.model_config = ObjectNamespace(**model_data["config"])
-            state.llm_options = ObjectNamespace(**model_data["options"])
-        else: # old version
-            state.model_config.prompt_template = model_data["prompt_template"]
-            state.model_config.chat_template = model_data["chat_template"]
-            state.model_config.instruction = model_data["instruction"]
-            state.model_config.mapper = model_data["mapper"]
-            state.model_params.n_ctx = model_data["n_ctx"]
-            state.model_params.n_gpu_layers = model_data["n_gpu_layers"]
-            state.llm_options.max_tokens = model_data["max_tokens"]
+    model_data = load_model_data(state.selected_llm)
+    state.model_params = model_data["params"]
+    state.model_config = model_data["config"]
+    state.llm_options = model_data["options"]
     state = refresh_data(state)
     return state
 
@@ -132,6 +115,7 @@ def render_llm_form(state):
             state = render_llm_options_form(state)
 
         if st.form_submit_button("Save Configs",disabled=not state.selected_llm):
+            state.model_params.fname = state.selected_llm
             state = save_model_config(state)
     return state
 

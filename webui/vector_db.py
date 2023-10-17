@@ -46,12 +46,12 @@ class VectorDB:
             **kwargs
             })
 
-    def get_query(self, query="",n_results=1,threshold=1.,include=["metadatas", "distances"]):
+    def get_query(self, query="",n_results=1,threshold=1.,include=[]):
         # Query the collection using natural language
         query_results = self.collection.query(
             query_texts=query,
             n_results=n_results,
-            include=include
+            include=include+["metadatas", "distances"]
         )
         distances = np.array(query_results["distances"])
         index = np.where(distances<threshold)[0]

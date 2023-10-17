@@ -4,7 +4,6 @@ from types import FunctionType
 from typing import List
 import streamlit as st
 from webui.utils import ObjectNamespace, gc_collect
-import weakref
 
 class SessionStateContext:
     def __init__(self, name: str, initial_state={}):

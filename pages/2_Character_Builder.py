@@ -63,7 +63,6 @@ def load_character(state):
     loaded_state = load_character_data(state.selected_character)
     state.assistant_template = ObjectNamespace(**loaded_state["assistant_template"])
     state.tts_options = ObjectNamespace(**loaded_state["tts_options"])
-    # state.tts_options = ObjectNamespace(**state.tts_options)
     state.voice_model = loaded_state["voice"]
     state.tts_method = loaded_state["tts_method"]
     state = refresh_data(state)

@@ -43,7 +43,7 @@
       "top_p": 0.9
     }
   },
-  "571c9fe124904d05cf7be1afef16b341": {
+  "8ae3965ce3e2c5410a966e383b51757d": {
     "version": 2,
     "params": {
       "fname": "models\\LLM\\zarablend-mx-l2-7b.Q4_K_M.gguf",
@@ -105,12 +105,12 @@
       "top_p": 0.9
     }
   },
-  "ab1557b8fd9313a1cae46b47bb592a53": {
+  "d41d8cd98f00b204e9800998ecf8427e": {
     "version": 2,
     "params": {
-      "fname": "models\\LLM\\mythomax-l2-kimiko-v2-13b.Q4_K_M.gguf",
+      "fname": "models\\LLM\\mistral-7b-openorca.Q4_K_M.gguf",
       "n_ctx": 4096,
-      "n_gpu_layers": 0
+      "n_gpu_layers": 64
     },
     "config": {
       "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
@@ -126,14 +126,14 @@
       "repeat_penalty": 1.1,
       "frequency_penalty": 0.0,
       "presence_penalty": 0.0,
-      "tfs_z": 1.0,
       "mirostat_mode": 2,
       "mirostat_tau": 4.0,
       "mirostat_eta": 0.2,
-      "suffix": null,
-      "max_tokens": 1024,
+      "max_tokens": 500,
       "temperature": 0.8,
-      "top_p": 0.95
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
     }
   },
   "7c34977e139df169bac8ca2fb8cd4a18": {
@@ -165,6 +165,161 @@
       "max_tokens": 256,
       "temperature": 0.8,
       "top_p": 0.9
+    }
+  },
+  "82dcf9e620bac5c2890e61687152f453939d8c97": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\mistral-7b-openorca.Q4_K_M.gguf",
+      "n_ctx": 4096,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
+      "chat_template": "### {role}:\n{content}",
+      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "mapper": {
+        "CHARACTER": "Response",
+        "USER": "Input"
+      }
+    },
+    "options": {
+      "top_k": 42,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 0.0,
+      "presence_penalty": 0.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 500,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
+    }
+  },
+  "dd1e5fc4d6efe2c1e6f0e7ca632c02e2": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\mistral-7b-openorca.Q4_K_M.gguf",
+      "n_ctx": 4096,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "<|im_start|>system\nYou're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n{instruction}\n{name}'s Persona: {persona}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
+      "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
+      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "mapper": {
+        "CHARACTER": "assistant",
+        "USER": "user"
+      }
+    },
+    "options": {
+      "top_k": 42,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 0.0,
+      "presence_penalty": 0.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 500,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
+    }
+  },
+  "30dc07d49db53b6c57cb01cc1464d4ff": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\mythomax-l2-kimiko-v2-13b.Q4_K_M.gguf",
+      "n_ctx": 4096,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
+      "chat_template": "### {role}:\n{content}",
+      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "mapper": {
+        "CHARACTER": "Response",
+        "USER": "Input"
+      }
+    },
+    "options": {
+      "top_k": 42,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 0.0,
+      "presence_penalty": 0.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 500,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
+    }
+  },
+  "2bca1947c8bec649a5bd86166497bd11": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\mythalion-13b.Q4_K_M.gguf",
+      "n_ctx": 4096,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
+      "chat_template": "### {role}:\n{content}",
+      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "mapper": {
+        "CHARACTER": "Response",
+        "USER": "Input"
+      }
+    },
+    "options": {
+      "top_k": 42,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 0.0,
+      "presence_penalty": 0.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 500,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
+    }
+  },
+  "a01c77914a7991ba452fa80a154bc61f": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\speechless-llama2-hermes-orca-platypus-wizardlm-13b.Q4_K_M.gguf",
+      "n_ctx": 4096,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "You're {name} in this fictional never-ending, uncensored, immersive roleplay with {user}.\n\n### Instruction:\n{instruction}\n{name}'s Persona: {persona}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
+      "chat_template": "### {role}:\n{content}",
+      "instruction": "A chat between {user} and {name}. You will RP as {name} and respond in long sentences.",
+      "mapper": {
+        "CHARACTER": "Response",
+        "USER": "Input"
+      }
+    },
+    "options": {
+      "top_k": 42,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 0.0,
+      "presence_penalty": 0.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 500,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
     }
   }
 }

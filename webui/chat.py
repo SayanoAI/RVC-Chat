@@ -121,13 +121,27 @@ def load_model_data(model_file):
     with open(fname,"r") as f:
         data = ObjectNamespace(**json.load(f)) if os.path.isfile(fname) else model_data
         if key in data:
-            model_data["params"].update(data[key]["params"])
-            model_data["config"].update(data[key]["config"])
-            model_data["options"].update(data[key]["options"])
+            data = data[key]
+            if "version" in data and data["version"]==2:
+                model_data["params"].update(data["params"])
+                model_data["config"].update(data["config"])
+                model_data["options"].update(data["options"])
+            else:
+                model_data["config"].update(
+                    prompt_template = data["prompt_template"],
+                    chat_template = data["chat_template"],
+                    instruction = data["instruction"],
+                    mapper = data["mapper"]
+                )
+                model_data["params"].update(
+                    n_ctx=data["n_ctx"],
+                    n_gpu_layers=data["n_gpu_layers"],
+                    fname=data["name"]
+                )
+                model_data["options"].update(max_tokens = model_data["max_tokens"])
 
     return model_data
 
-@lru_cache(1)
 def get_llm(fname,n_ctx,n_gpu_layers,verbose=False,context=""):
 
     # load LLM
@@ -216,13 +230,16 @@ class Character:
 
         try:
             # load LLM first
-            self.LLM = get_llm(
-                self.model_file,
-                n_ctx=self.model_data["params"]["n_ctx"],
-                n_gpu_layers=self.model_data["params"]["n_gpu_layers"],
-                verbose=verbose,
-                context=self.context
-            )
+            # self.LLM = get_llm(
+            #     self.model_file,
+            #     n_ctx=self.model_data["params"]["n_ctx"],
+            #     n_gpu_layers=self.model_data["params"]["n_gpu_layers"],
+            #     verbose=verbose,
+            #     context=self.context
+            # )
+            # load LLM
+            self.LLM = Llama(self.model_file,n_ctx=self.model_data["params"]["n_ctx"],n_gpu_layers=self.model_data["params"]["n_gpu_layers"],verbose=verbose)
+            self.LLM.create_completion(self.context,max_tokens=1) #preload
             print(self.LLM)
             self.context_size = len(self.LLM.tokenize(self.context.encode("utf-8")))
             self.free_tokens = self.model_data["params"]["n_ctx"] - self.context_size
