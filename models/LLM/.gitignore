@@ -1,3 +1,4 @@
 *
 !.gitignore
 !*.json
+!json.gbnf

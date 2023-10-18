@@ -187,6 +187,15 @@ class Character:
             self.update_ltm(self.character_data["assistant_template"]["examples"])
 
         self.character_file = fname
+
+        # load voice model
+        try:
+            if self.voice_model: del self.voice_model
+            self.voice_model = get_vc(self.character_data["voice"],config=config,device=self.device)
+            self.has_voice=True
+        except Exception as e:
+            print(f"failed to load voice {e}")
+            self.has_voice=False
         
         return self.character_data
 
@@ -196,7 +205,7 @@ class Character:
         for ex in messages:
             if ex["role"] and ex["content"]:
                 document =  model_config["chat_template"].format(role=model_config["mapper"][ex["role"]],content=ex["content"])
-                self.ltm.add_documents(document,
+                self.ltm.add_document(document,
                     role=model_config["mapper"][ex["role"]],
                     content=ex["content"]
                 )
@@ -209,6 +218,9 @@ class Character:
     def __del__(self):
         del self.ltm, self.messages
         self.unload()
+
+    def __str__(self):
+        return f"Character({self.character_file=},{self.model_file=},{self.loaded=})"
 
     def __missing__(self,attribute):
         return None
@@ -228,12 +240,6 @@ class Character:
             self.context_size = len(self.LLM.tokenize(self.context.encode("utf-8")))
             self.free_tokens = self.model_data["params"]["n_ctx"] - self.context_size
 
-            # load voice model
-            try:
-                self.voice_model = get_vc(self.character_data["voice"],config=config,device=self.device)
-                self.has_voice=True
-            except Exception as e:
-                print(f"failed to load voice {e}")
             if len(self.messages)==0 and self.character_data["assistant_template"]["greeting"] and self.user:
                 self.messages.append(self.greeting_message)
             

@@ -1,5 +1,6 @@
 from functools import lru_cache
 import hashlib
+import json
 import chromadb
 import numpy as np
 from uuid import uuid4
@@ -40,18 +41,29 @@ class VectorDB:
         except Exception as e: print(f"Failed to delete collection{e}")
         finally: self.collection, self.key = get_collection(self.name)
 
-    def add_documents(self,document,**kwargs):
+    def add_function(self,description,function,arguments,**args):
+        self.collection.add(ids=[str(uuid4())],documents=description,metadatas={
+            "hnsw:space": "cosine",
+            "type": "function",
+            "function": function,
+            "arguments": json.dumps(arguments),
+            "template": json.dumps(args)
+            })
+
+    def add_document(self,document,**kwargs):
         self.collection.add(ids=[str(uuid4())],documents=document,metadatas={
             "hnsw:space": "cosine",
+            "type": "document",
             **kwargs
             })
 
-    def get_query(self, query="",n_results=1,threshold=1.,include=[]):
+    def get_query(self, query="",n_results=1,threshold=1.,include=[],type="document"):
         # Query the collection using natural language
         query_results = self.collection.query(
             query_texts=query,
             n_results=n_results,
-            include=include+["metadatas", "distances"]
+            include=include+["metadatas", "distances"],
+            where={"type": type}
         )
         distances = np.array(query_results["distances"])
         index = np.where(distances<threshold)[0]
