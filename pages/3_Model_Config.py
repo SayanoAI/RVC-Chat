@@ -72,7 +72,7 @@ def load_model_config(state):
     return state
 
 def render_model_config_form(state):
-    state.model_config.instruction = st.text_area("Instruction",value=state.model_config.instruction)
+    state.model_config.instruction = st.text_area("System's Instruction",value=state.model_config.instruction)
     state.model_config.chat_template = st.text_area("Dialogue Format",value=state.model_config.chat_template)
     state.model_config.prompt_template = st.text_area("Prompt Template",value=state.model_config.prompt_template,height=400)
     state.model_config.mapper = st.data_editor(state.model_config.mapper,

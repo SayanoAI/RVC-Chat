@@ -444,15 +444,19 @@ class Character:
                 model_config["chat_template"].format(role=self.chat_mapper(ex["metadata"]["role"]),content=ex["metadata"]["content"])
                 for ex in history
             ]
+        context = "\n".join(examples).format(char=assistant_template["name"],user=self.user)
             
-        instruction = model_config["instruction"].format(char=assistant_template["name"],user=self.user)
         persona = "\n".join(text for text in [
             assistant_template['background'],
             assistant_template['personality'],
             assistant_template['appearance'],
             assistant_template['scenario']
         ] if text is not None).format(char=assistant_template["name"],user=self.user)
-        context = "\n".join(examples).format(char=assistant_template["name"],user=self.user)
+        instruction = model_config["instruction"].format(
+            char=assistant_template["name"],
+            user=self.user,
+            persona=persona
+        )
         
         chat_history_with_template = model_config["prompt_template"].format(
             context=context,
