@@ -12,21 +12,22 @@ def get_db_client():
     client = chromadb.Client()
     return client
 
-def get_collection(name,embedding_function=None):
+def get_collection_and_key(name,embedding_function=None):
     client = get_db_client()
     num = len(client.list_collections())
 
     # Create a collection for function calls
     key = hashlib.md5(f"{name}-{num}".encode('utf-8')).hexdigest()
-    collection = client.get_or_create_collection(key,embedding_function=embedding_function)
-
-    return collection, key
+    if embedding_function is None:
+        return client.get_or_create_collection(key), key
+    else:
+        return client.get_or_create_collection(key,embedding_function=embedding_function), key
 
 class VectorDB:
     def __init__(self,name="",embedding_function=None):
         self.name=name
         self.embedding_function=embedding_function
-        self.collection, self.key = get_collection(name,embedding_function=embedding_function)
+        self.collection, self.key = get_collection_and_key(name,embedding_function=embedding_function)
 
     def __del__(self):
         try:
@@ -40,7 +41,7 @@ class VectorDB:
             get_db_client().delete_collection(self.key)
             del self.collection
         except Exception as e: print(f"Failed to delete collection{e}")
-        finally: self.collection, self.key = get_collection(self.name)
+        finally: self.collection, self.key = get_collection_and_key(self.name)
 
     def add_function(self,description,function,arguments,**args):
         self.collection.add(ids=[str(uuid4())],documents=description,metadatas={
