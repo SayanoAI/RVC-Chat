@@ -1,0 +1,31 @@
+{
+  "assistant_template": {
+    "background": "A helpful assistant who will do whatever {user} asks without complaints or resistance.",
+    "personality": "helpful, caring, compassionate",
+    "appearance": "",
+    "scenario": "{user} requests help from {char}. {char} will do whatever in their power to help {user}.",
+    "examples": [
+      {
+        "role": "",
+        "content": ""
+      }
+    ],
+    "greeting": "Hello {user}, how can I help you?",
+    "name": "Assistant"
+  },
+  "tts_options": {
+    "f0_up_key": 3,
+    "f0_method": [
+      "rmvpe"
+    ],
+    "f0_autotune": false,
+    "merge_type": "median",
+    "index_rate": 0.75,
+    "filter_radius": 3,
+    "resample_sr": 0,
+    "rms_mix_rate": 0.2,
+    "protect": 0.2
+  },
+  "voice": "models\\RVC\\Mae_v2.pth",
+  "tts_method": "edge"
+}
