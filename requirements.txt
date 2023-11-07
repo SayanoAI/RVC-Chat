@@ -54,7 +54,7 @@ Unidecode==1.1.1
 phonemizer==2.2.1
 
 #required by chat
-llama-cpp-python>=0.1.79 #support for gguf
+# llama-cpp-python>=0.1.79 #using koboldcpp
 sounddevice
 emoji
 pyaudio==0.2.13
