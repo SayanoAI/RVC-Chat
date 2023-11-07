@@ -208,7 +208,7 @@
     "config": {
       "prompt_template": "<|im_start|>system\n{instruction}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
       "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
-      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and respond in long sentences.\n{char}'s Persona: {persona}",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.",
       "mapper": {
         "CHARACTER": "assistant",
         "USER": "user"
@@ -223,7 +223,7 @@
       "mirostat_mode": 2,
       "mirostat_tau": 4.0,
       "mirostat_eta": 0.2,
-      "max_tokens": 500,
+      "max_tokens": 1024,
       "temperature": 0.8,
       "top_p": 0.95,
       "tfs_z": 1.0,
@@ -271,7 +271,7 @@
     "config": {
       "prompt_template": "### Instruction:\n{instruction}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
       "chat_template": "### {role}:\n{content}",
-      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act as {char} and respond in long sentences.\n{char}'s Persona: {persona}",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act as {char} and follow the instructions as closely as possible.",
       "mapper": {
         "CHARACTER": "Response",
         "USER": "Input"
@@ -286,7 +286,7 @@
       "mirostat_mode": 2,
       "mirostat_tau": 4.0,
       "mirostat_eta": 0.2,
-      "max_tokens": 500,
+      "max_tokens": 1024,
       "temperature": 0.8,
       "top_p": 0.95,
       "tfs_z": 1.0,
@@ -318,6 +318,38 @@
       "mirostat_tau": 4.0,
       "mirostat_eta": 0.2,
       "max_tokens": 500,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
+    }
+  },
+  "e87a1dc30a3454e6debd8d737ae66d92": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\openhermes-2.5-mistral-7b.Q4_K_M.gguf",
+      "n_ctx": 8192,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "<|im_start|>system\n{instruction}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
+      "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.",
+      "mapper": {
+        "CHARACTER": "assistant",
+        "USER": "user"
+      },
+      "stop_words": "<|im_end|>,<|im_start|>"
+    },
+    "options": {
+      "top_k": 42,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 1.0,
+      "presence_penalty": 1.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 1024,
       "temperature": 0.8,
       "top_p": 0.95,
       "tfs_z": 1.0,

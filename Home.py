@@ -35,6 +35,15 @@ def render_download_ffmpeg(lib_name="ffmpeg.exe"):
         file_downloader((lib_name,link))
         st.experimental_rerun()
 
+def render_download_koboldcpp(lib_name="koboldcpp.exe"):
+    col1, col2 = st.columns(2)
+    is_downloaded = os.path.exists(lib_name)
+    col1.checkbox(os.path.basename(lib_name),value=is_downloaded,disabled=True)
+    if col2.button("Download",disabled=is_downloaded,key=lib_name):
+        link = f"{RVC_DOWNLOAD_LINK}koboldcpp.exe"
+        file_downloader((lib_name,link))
+        st.experimental_rerun()
+
 def render_model_checkboxes(generator):
     not_downloaded = []
     for model_path,link in generator:
@@ -68,6 +77,7 @@ if __name__=="__main__":
     with st.container():
         if platform.system() == "Windows":
             render_download_ffmpeg()
+            render_download_koboldcpp()
         elif platform.system() == "Linux":
             st.markdown("run `apt update && apt install -y -qq ffmpeg espeak` in your terminal")
 
@@ -104,3 +114,5 @@ if __name__=="__main__":
         to_download = render_model_checkboxes(generator)
         with ProgressBarContext(to_download,file_downloader,"Downloading models") as pb:
             st.button("Download All",key="download-all-chat-models",disabled=len(to_download)==0,on_click=pb.run)
+
+    

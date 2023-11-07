@@ -119,6 +119,8 @@ if __name__=="__main__":
         if chat_disabled: hint.warning("Enter your name, select your state.character, and choose a language model to get started!")
 
         if not chat_disabled:
+            state.character.has_voice = col3.checkbox("Voiced", value=state.character.has_voice) # mutes character
+            st.write(state.character.has_voice)
 
             # save/load chat history
             save_dir = os.path.join(OUTPUT_DIR,"chat",state.character.name)
@@ -150,20 +152,25 @@ if __name__=="__main__":
                         st.experimental_rerun()
 
             # container = st.container()
-            if st.button("Summarize Context"):
+            c1,c2,c3,c4 = st.columns(4)
+            if c1.button("Summarize Context"):
                 st.write(state.character.summarize_context())
-            if state.character.is_recording:
-                if st.button("Stop Voice Chat",type="primary"):
-                    state.character.is_recording=False
-                    st.experimental_rerun()
-                with st.spinner("Listening to mic..."):
-                    time.sleep(1)
-                    st.experimental_rerun()
+            # if state.character.is_recording:
+            #     if st.button("Stop Voice Chat",type="primary"):
+            #         state.character.is_recording=False
+            #         st.experimental_rerun()
+            #     with st.spinner("Listening to mic..."):
+            #         time.sleep(1)
+            #         st.experimental_rerun()
             # elif st.button("Voice Chat (WIP)",type="secondary" ):
             #     state.character.speak_and_listen()
             #     st.experimental_rerun()
-            elif st.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
+            elif c2.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
                 state.character.toggle_autoplay()
+            # elif c3.button("Continue",type="primary" if state.character.autoplay else "secondary" ):
+            #     state.character.toggle_continue()
+            # elif c4.button("Regenerate",type="primary" if state.character.autoplay else "secondary" ):
+            #     state.character.toggle_regenerate()
 
             if prompt:=st.chat_input(disabled=chat_disabled or state.character.autoplay) or state.character.autoplay:
                 state.character.is_recording=False
@@ -173,12 +180,18 @@ if __name__=="__main__":
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
                     for response in state.character.generate_text("Continue the story without me" if state.character.autoplay else prompt):
-                        full_response += response
+                        full_response = response
                         message_placeholder.markdown(full_response)
-                audio = state.character.text_to_speech(full_response)
-                if audio: sd.play(*audio)
+                if state.character.has_voice:
+                    audio = state.character.text_to_speech(full_response)
+                    if audio:
+                        if state.character.autoplay: sd.wait() # wait for speech to finish
+                        sd.play(*audio)
+                else:
+                    audio = None
                 if not state.character.autoplay:
                     state.character.messages.append({"role": state.character.user, "content": prompt}) #add user prompt to history
+                
                 state.character.messages.append({
                     "role": state.character.name,
                     "content": full_response,

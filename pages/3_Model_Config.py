@@ -85,7 +85,7 @@ def render_model_config_form(state):
     return state
 
 def render_llm_options_form(state):
-    state.llm_options.top_k = st.slider("top_k",min_value=1,max_value=50,step=1,value=state.llm_options.top_k)
+    state.llm_options.top_k = st.slider("top_k",min_value=1,max_value=100,step=1,value=state.llm_options.top_k)
     state.llm_options.repeat_penalty = st.slider("repeat_penalty",min_value=0.0,max_value=2.0,step=.1,value=state.llm_options.repeat_penalty)
     state.llm_options.frequency_penalty = st.slider("frequency_penalty",min_value=0.0,max_value=2.0,step=.1,value=state.llm_options.frequency_penalty)
     state.llm_options.presence_penalty = st.slider("presence_penalty",min_value=0.0,max_value=2.0,step=.1,value=state.llm_options.presence_penalty)
@@ -98,7 +98,8 @@ def render_llm_options_form(state):
     return state
 
 def render_model_params_form(state):
-    state.model_params.n_ctx = st.slider("Max Context Length", min_value=512, max_value=4096, step=512, value=state.model_params.n_ctx)
+    CONTEXTSIZE_OPTIONS = [256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,65536]
+    state.model_params.n_ctx = st.select_slider("Max Context Length", options=CONTEXTSIZE_OPTIONS, value=state.model_params.n_ctx)
     state.model_params.n_gpu_layers = st.slider("GPU Layers", min_value=0, max_value=64, step=4, value=state.model_params.n_gpu_layers)
     
     return state

@@ -1,11 +1,10 @@
 from datetime import datetime
-from functools import lru_cache
 import io
 import json
 import os
 import threading
 from webui.utils import ObjectNamespace
-from llama_cpp import Llama
+from webui.kobold_cpp import Llama
 import numpy as np
 from lib.model_utils import get_hash
 from tts_cli import generate_speech, load_stt_models, transcribe_speech
@@ -184,7 +183,7 @@ class Character:
         self.name = self.character_data["assistant_template"]["name"]
         if fname!=self.character_file:
             self.clear_chat()
-            self.update_ltm(self.character_data["assistant_template"]["examples"])
+            # self.update_ltm(self.character_data["assistant_template"]["examples"])
 
         self.character_file = fname
 
@@ -235,9 +234,7 @@ class Character:
 
         try:
             self.LLM = Llama(self.model_file,n_ctx=self.model_data["params"]["n_ctx"],n_gpu_layers=self.model_data["params"]["n_gpu_layers"],verbose=verbose)
-            self.LLM.create_completion(self.context,max_tokens=1) #preload
-            print(self.LLM)
-            self.context_size = len(self.LLM.tokenize(self.context.encode("utf-8")))
+            self.context_size = self.LLM.token_count(self.context)
             self.free_tokens = self.model_data["params"]["n_ctx"] - self.context_size
 
             if len(self.messages)==0 and self.character_data["assistant_template"]["greeting"] and self.user:
@@ -400,11 +397,8 @@ class Character:
         # Send the input text to llamacpp model as a prompt
         self.context = self.build_context(input_text)
         generator = self.LLM.create_completion(
-            self.context,stream=True,stop=[
-                "*","\n",
-                model_config["mapper"]["USER"],
-                model_config["mapper"]["CHARACTER"]
-                ]+model_config["stop_words"].split(","),**self.model_data["options"])
+            self.context,stream=True,stop=["USER","CHARACTER"]+model_config["stop_words"].split(","),
+            **self.model_data["options"])
         
         for completion_chunk in generator:
             response = completion_chunk['choices'][0]['text']
@@ -429,7 +423,7 @@ class Character:
             self.context_summary = self.summarize_context()
             
         # summarize memory
-        elif self.loaded and len(self.LLM.tokenize(self.context.encode("utf-8")))+self.context_size>self.model_data["params"]["n_ctx"]:
+        elif self.loaded and self.LLM.token_count(self.context)+self.context_size>self.model_data["params"]["n_ctx"]:
             self.context_index+=self.memory
             self.context_summary = self.summarize_context() #summarizes the past
         
@@ -437,31 +431,38 @@ class Character:
         history = self.ltm.get_query(prompt,n_results=self.memory)
         if len(history): print(history)
 
-        examples = [
+        messages = "\n".join([
             model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
-                for ex in self.messages[self.context_index:]
-            ] + [
-                model_config["chat_template"].format(role=self.chat_mapper(ex["metadata"]["role"]),content=ex["metadata"]["content"])
-                for ex in history
-            ]
-        context = "\n".join(examples).format(char=assistant_template["name"],user=self.user)
+            for ex in self.messages[self.context_index:]
+        ])
+        history = "\n".join([
+            model_config["chat_template"].format(role=self.chat_mapper(ex["metadata"]["role"]),content=ex["metadata"]["content"])
+            for ex in history
+        ])
+        examples = "\n".join([
+            model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
+            for ex in assistant_template["examples"]
+        ])
             
-        persona = "\n".join(text for text in [
-            assistant_template['background'],
-            assistant_template['personality'],
-            assistant_template['appearance'],
-            assistant_template['scenario']
-        ] if text is not None).format(char=assistant_template["name"],user=self.user)
+        persona = "\n".join(
+            f"{key.upper()}: {assistant_template[key]}"
+            for key in ["background","personality","appearance","scenario"]
+            if assistant_template[key]
+        )
+
+        context = "\n\n".join([f"PERSONA\n{persona}",f"EXAMPLES\n{examples}",f"HISTORY\n{history}",messages]).format(
+            char=assistant_template["name"],
+            user=self.user
+        )
+
         instruction = model_config["instruction"].format(
             char=assistant_template["name"],
-            user=self.user,
-            persona=persona
+            user=self.user
         )
         
         chat_history_with_template = model_config["prompt_template"].format(
             context=context,
             instruction=instruction,
-            persona=persona,
             char=assistant_template["name"],
             user=self.user,
             prompt=prompt
@@ -534,8 +535,13 @@ class Character:
                         full_response = ""
                         for response in self.generate_text(prompt):
                             full_response += response
-                        output_audio = self.text_to_speech(full_response) if self.has_voice else None
-                        if output_audio: sd.play(*output_audio)
+
+                        if self.has_voice:
+                            output_audio = self.text_to_speech(full_response)
+                            if output_audio: sd.play(*output_audio)
+                        else:
+                            output_audio = None
+                        
                         self.messages.append({"role": self.user, "content": prompt, "audio": input_audio}) #add user prompt to history
                         self.messages.append({
                             "role": self.name,
