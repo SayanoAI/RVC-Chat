@@ -1,6 +1,8 @@
+import html
 import json
 import os
 from pathlib import Path
+import random
 from webui.utils import ObjectNamespace
 from typing import Tuple
 import streamlit as st
@@ -186,3 +188,48 @@ def file_downloader(params: Tuple[str, str], expected_size=None):
             weights_warning.empty()
         if progress_bar is not None:
             progress_bar.empty()
+
+## Ported from streamlit_tensorboard with modifications
+def st_iframe(url: str, width=None, height=None, scrolling=False):
+    """Embed iframe within a Streamlit app
+    Parameters
+    ----------
+    url: string
+        URL of the server. Defaults to `http://localhost:8188`
+    width: int
+        The width of the frame in CSS pixels. Defaults to container width.
+    height: int
+        The height of the frame in CSS pixels. Defaults to container height.
+    scrolling: bool
+        If True, show a scrollbar when the content is larger than the iframe.
+        Otherwise, do not show a scrollbar. Defaults to False.
+
+    Example
+    -------
+    >>> st_iframe(url="http://localhost:8888", width=1080)
+    """
+
+    frame_id = "swagger-frame-{:08x}".format(random.getrandbits(64))
+    shell = """
+        <iframe id="%HTML_ID%" width="%WIDTH%" height="%HEIGHT%" frameborder="0">
+        </iframe>
+        <script>
+        (function() {
+            const frame = document.getElementById(%JSON_ID%);
+            frame.src = new URL(%URL%, window.location);
+        })();
+        </script>
+    """
+
+    replacements = [
+        ("%HTML_ID%", html.escape(frame_id, quote=True)),
+        ("%JSON_ID%", json.dumps(frame_id)),
+        ("%HEIGHT%", str(height) if height else "100%"),
+        ("%WIDTH%", str(width) if width else "100%"),
+        ("%URL%", json.dumps(url)),
+    ]
+
+    for (k, v) in replacements:
+        shell = shell.replace(k, v)
+
+    return st.components.v1.html(shell, width=width, height=height, scrolling=scrolling)

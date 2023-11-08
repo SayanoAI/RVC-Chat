@@ -8,18 +8,28 @@ import requests
 import asyncio
 from functools import lru_cache
 from webui import get_cwd
+from webui.utils import get_cache
 
 CWD = get_cwd()
+SERVER = get_cache("subprocesses")
 
-@lru_cache(maxsize=1)
 def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=2048):
+    if SERVER["LLM"] and "url" in SERVER["LLM"]:
+        # change model later
+        return SERVER["LLM"]["url"]
+    
     base_url = f"http://{host}:{port}/api"
     cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={gpulayers} --contextsize={contextsize} --skiplauncher --multiuser --smartcontext --usecublas"
-    subprocess.Popen(cmd, shell=True, cwd=CWD)
+    process = subprocess.Popen(cmd, shell=True, cwd=CWD)
     for i in range(60): # wait for server to start up
         try:
             with requests.get(base_url) as req:
-                if req.status_code==200: break
+                if req.status_code==200:
+                    SERVER["LLM"] = {
+                        "url": base_url,
+                        "process": process
+                    }
+                    break
         except Exception:
             sleep(1.)
             print(f"waited {i+1} seconds...")
@@ -47,7 +57,9 @@ class Llama:
         return {"Accept": "application/json", "Content-Type": "application/json"}
         
     def __del__(self):
-        self.subprocess.kill()
+        if SERVER["LLM"] and "process" in SERVER["LLM"]:
+            SERVER["LLM"]["process"].kill()
+            del SERVER["LLM"]
 
     def __call__(self, *args: Any, **kwds: Any):
         return self.create_completion(*args,**kwds)

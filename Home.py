@@ -1,30 +1,17 @@
 # First
-from io import BytesIO
 import os
 import platform
-from pytube import YouTube
 import streamlit as st
 from webui import MENU_ITEMS, get_cwd
 st.set_page_config("RVC Chat",layout="centered",menu_items=MENU_ITEMS)
 
-
-from tts_cli import STT_MODELS_DIR, stt_checkpoint, load_stt_models
-
 from webui.components import file_downloader, file_uploader_form
 
-from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, VITS_MODELS, download_link_generator
+from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, download_link_generator
 
 CWD = get_cwd()
 
 from webui.contexts import ProgressBarContext
-
-def download_audio_to_buffer(url):
-    buffer = BytesIO()
-    youtube_video = YouTube(url)
-    audio = youtube_video.streams.get_audio_only()
-    default_filename = audio.default_filename
-    audio.stream_to_buffer(buffer)
-    return default_filename, buffer
 
 def render_download_ffmpeg(lib_name="ffmpeg.exe"):
     col1, col2 = st.columns(2)
@@ -94,22 +81,7 @@ if __name__=="__main__":
             with ProgressBarContext(to_download,file_downloader,"Downloading models",parallel=True) as pb:
                 pb.run()
     
-    with st.expander("VITS Models"):
-        generator = download_link_generator(RVC_DOWNLOAD_LINK, VITS_MODELS)
-        to_download = render_model_checkboxes(generator)
-        with ProgressBarContext(to_download,file_downloader,"Downloading models") as pb:
-            st.button("Download All",key="download-all-vits-models",disabled=len(to_download)==0,on_click=pb.run)
-
     with st.expander("Chat Models"):
-        col1, col2 = st.columns(2)
-        stt_path = os.path.join(STT_MODELS_DIR,stt_checkpoint)
-        is_downloaded = os.path.exists(stt_path)
-        col1.checkbox(os.path.basename(stt_path),value=is_downloaded,disabled=True)
-        if col2.button("Download",disabled=is_downloaded,key=stt_path):
-            with st.spinner(f"Downloading {stt_checkpoint} to {stt_path}"):
-                models = load_stt_models("speecht5") #hacks the from_pretrained downloader
-                del models
-                st.experimental_rerun()
         generator = [(os.path.join(BASE_MODELS_DIR,"LLM",os.path.basename(link)),link) for link in LLM_MODELS]
         to_download = render_model_checkboxes(generator)
         with ProgressBarContext(to_download,file_downloader,"Downloading models") as pb:
