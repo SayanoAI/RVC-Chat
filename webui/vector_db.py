@@ -4,6 +4,7 @@ import json
 import chromadb
 import numpy as np
 from uuid import uuid4
+from webui.functions import load_functions
 
 from webui.utils import gc_collect
 
@@ -19,15 +20,18 @@ def get_collection_and_key(name,embedding_function=None):
     # Create a collection for function calls
     key = hashlib.md5(f"{name}-{num}".encode('utf-8')).hexdigest()
     if embedding_function is None:
-        return client.get_or_create_collection(key), key
+        collection = client.get_or_create_collection(key)
     else:
-        return client.get_or_create_collection(key,embedding_function=embedding_function), key
+        collection = client.get_or_create_collection(key,embedding_function=embedding_function)
+
+    return collection, key
 
 class VectorDB:
     def __init__(self,name="",embedding_function=None):
         self.name=name
         self.embedding_function=embedding_function
         self.collection, self.key = get_collection_and_key(name,embedding_function=embedding_function)
+        load_functions(self)
 
     def __del__(self):
         try:

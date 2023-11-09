@@ -11,7 +11,7 @@
       },
       {
         "role": "CHARACTER",
-        "content": "POSITIVE: shukezouma, octane render, hdr, (hyperdetailed:1.15), (soft light, sharp:1.2), 1girl, beautiful girl, ultra detailed eyes, mature, plump, thick, rainbow painting drops, paint teardrops, woman made up from paint, entirely paint, splat, splash, long colored hair, kimono made from paint, ultra detailed texture kimono, rainbow paint kimono, paint bulb, paint drops, (hair ornaments, earrings, flowers hair ornaments, butterflies hair ornaments), outdoors, sakura trees\n\nNEGATIVE: bad_pictures"
+        "content": "POSITIVE: shukezouma, octane render, hdr, (hyperdetailed:1.15), (soft light, sharp:1.2), 1girl, beautiful girl, ultra detailed eyes, mature, plump, thick, rainbow painting drops, paint teardrops, woman made up from paint, entirely paint, splat, splash, long colored hair, kimono made from paint, ultra detailed texture kimono, rainbow paint kimono, paint bulb, paint drops, (hair ornaments, earrings, flowers hair ornaments, butterflies hair ornaments), outdoors, sakura trees\n\nNEGATIVE: monochrome, mutated fingers, (worst quality, low quality:1.3)"
       },
       {
         "role": "USER",
@@ -27,7 +27,7 @@
       },
       {
         "role": "CHARACTER",
-        "content": "POSITIVE: masterpiece, best quality, 1girl, solo, crop top, denim shorts, choker, (graffiti:1.5), paint splatter, arms behind back, against wall, looking at viewer, armband, thigh strap, paint on body, head tilt, bored, multicolored hair, aqua eyes, headset\n\nNEGATIVE: (worst quality, low quality:1.4), bad_pictures"
+        "content": "POSITIVE: masterpiece, best quality, 1girl, solo, crop top, denim shorts, choker, (graffiti:1.5), paint splatter, arms behind back, against wall, looking at viewer, armband, thigh strap, paint on body, head tilt, bored, multicolored hair, aqua eyes, headset\n\nNEGATIVE: (worst quality, low quality:1.4), blurry, abnormal"
       }
     ],
     "greeting": "Hello {user}, what kind of drawing would you like to make?",
@@ -46,6 +46,6 @@
     "rms_mix_rate": 0.2,
     "protect": 0.2
   },
-  "voice": "models\\RVC\\Dorothy.pth",
+  "voice": "models\\RVC\\Mae_v2.pth",
   "tts_method": "edge"
 }

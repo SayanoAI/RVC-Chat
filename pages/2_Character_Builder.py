@@ -1,15 +1,13 @@
 import json
 import os
 import streamlit as st
-from webui import MENU_ITEMS, TTS_MODELS, get_cwd, i18n
+from webui import MENU_ITEMS, TTS_MODELS, ObjectNamespace, get_cwd, i18n
 from webui.chat import init_assistant_template, init_tts_options, load_character_data
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.components import voice_conversion_form
 
 from webui.contexts import SessionStateContext
-
-from webui.utils import ObjectNamespace
 
 from webui.utils import get_filenames, get_index
 

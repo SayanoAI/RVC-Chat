@@ -1,15 +1,15 @@
 import json
 import os
 import streamlit as st
-from webui import MENU_ITEMS, get_cwd
-from webui.chat import init_llm_options, init_model_config, init_model_data, init_model_params, load_model_data
+from webui import MENU_ITEMS, ObjectNamespace, get_cwd
+from webui.chat import init_llm_options, init_model_config, init_model_params, load_model_data
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from lib.model_utils import get_hash
 
 from webui.contexts import SessionStateContext
 
-from webui.utils import ObjectNamespace, get_filenames, get_index
+from webui.utils import get_filenames, get_index
 
 CWD = get_cwd()
 

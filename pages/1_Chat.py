@@ -1,16 +1,16 @@
 import os
-import weakref
 import streamlit as st
-from webui import MENU_ITEMS, config, get_cwd, i18n, DEVICE_OPTIONS
+from webui import MENU_ITEMS, SERVERS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
 from webui.chat import Character
 from webui.downloader import OUTPUT_DIR
+from webui.functions import call_function
+from webui.image_generation import generate_images
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.components import file_uploader_form
 import sounddevice as sd
 from webui.contexts import SessionStateContext
-import time
-from webui.utils import get_filenames, get_index, get_optimal_torch_device, ObjectNamespace, gc_collect, get_cache
+from webui.utils import get_filenames, get_index, get_optimal_torch_device, gc_collect
 
 CWD = get_cwd()
 
@@ -45,28 +45,6 @@ def refresh_data(state):
     state.characters = get_character_list()
     gc_collect()
     return state
-
-# A cache that stores weak references to large objects
-CHARACTER_CACHE = get_cache("CHARACTER_CACHE")
-
-@st.cache_resource
-def get_character(_state):
-    key = "character"
-
-    if key in CHARACTER_CACHE and CHARACTER_CACHE[key]:
-        return CHARACTER_CACHE[key]
-
-    character = Character(
-        character_file=_state.get("selected_character"),
-        model_file=_state.get("selected_llm"),
-        user=_state.get("user"),
-        device=_state.get("device"),
-        memory=state.memory
-    )
-    
-    CHARACTER_CACHE[key] = character
-    _state.character = weakref.ref(character)
-    return _state
 
 if __name__=="__main__":
     with SessionStateContext("chat",init_state()) as state:
@@ -112,7 +90,13 @@ if __name__=="__main__":
                             state.character.unload()
                             st.toast(state.character.load())
                     else:
-                        state = get_character(state)
+                        state.character = Character(
+                            character_file=state.get("selected_character"),
+                            model_file=state.get("selected_llm"),
+                            user=state.get("user"),
+                            device=state.get("device"),
+                            memory=state.memory
+                        )
                         if state.character and not state.character.loaded: st.toast(state.character.load())
 
         chat_disabled = state.character is None or not state.character.loaded
@@ -120,7 +104,6 @@ if __name__=="__main__":
 
         if not chat_disabled:
             state.character.has_voice = col3.checkbox("Voiced", value=state.character.has_voice) # mutes character
-            st.write(state.character.has_voice)
 
             # save/load chat history
             save_dir = os.path.join(OUTPUT_DIR,"chat",state.character.name)
@@ -155,33 +138,26 @@ if __name__=="__main__":
             c1,c2,c3,c4 = st.columns(4)
             if c1.button("Summarize Context"):
                 st.write(state.character.summarize_context())
-            # if state.character.is_recording:
-            #     if st.button("Stop Voice Chat",type="primary"):
-            #         state.character.is_recording=False
-            #         st.experimental_rerun()
-            #     with st.spinner("Listening to mic..."):
-            #         time.sleep(1)
-            #         st.experimental_rerun()
-            # elif st.button("Voice Chat (WIP)",type="secondary" ):
-            #     state.character.speak_and_listen()
-            #     st.experimental_rerun()
             elif c2.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
                 state.character.toggle_autoplay()
-            # elif c3.button("Continue",type="primary" if state.character.autoplay else "secondary" ):
-            #     state.character.toggle_continue()
-            # elif c4.button("Regenerate",type="primary" if state.character.autoplay else "secondary" ):
-            #     state.character.toggle_regenerate()
 
             if prompt:=st.chat_input(disabled=chat_disabled or state.character.autoplay) or state.character.autoplay:
                 state.character.is_recording=False
                 if not state.character.autoplay:
                     st.chat_message(state.character.user).write(prompt)
+                
                 full_response = ""
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
                     for response in state.character.generate_text("Continue the story without me" if state.character.autoplay else prompt):
                         full_response = response
                         message_placeholder.markdown(full_response)
+
+                    image_prompt = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=2) # calls function
+                    if image_prompt:
+                        images = generate_images(SERVERS["SD"]["url"],image_prompt)
+                        st.image(images)
+
                 if state.character.has_voice:
                     audio = state.character.text_to_speech(full_response)
                     if audio:
@@ -189,6 +165,7 @@ if __name__=="__main__":
                         sd.play(*audio)
                 else:
                     audio = None
+            
                 if not state.character.autoplay:
                     state.character.messages.append({"role": state.character.user, "content": prompt}) #add user prompt to history
                 

@@ -6,17 +6,14 @@ from time import sleep
 from typing import Any, Iterator, List, Optional, Union
 import requests
 import asyncio
-from functools import lru_cache
-from webui import get_cwd
-from webui.utils import get_cache
+from webui import SERVERS, get_cwd
 
 CWD = get_cwd()
-SERVER = get_cache("subprocesses")
 
 def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=2048):
-    if SERVER["LLM"] and "url" in SERVER["LLM"]:
+    if SERVERS["LLM"] and "url" in SERVERS["LLM"]:
         # change model later
-        return SERVER["LLM"]["url"]
+        return SERVERS["LLM"]["url"]
     
     base_url = f"http://{host}:{port}/api"
     cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={gpulayers} --contextsize={contextsize} --skiplauncher --multiuser --smartcontext --usecublas"
@@ -25,7 +22,7 @@ def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=20
         try:
             with requests.get(base_url) as req:
                 if req.status_code==200:
-                    SERVER["LLM"] = {
+                    SERVERS["LLM"] = {
                         "url": base_url,
                         "process": process
                     }
@@ -33,7 +30,7 @@ def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=20
         except Exception:
             sleep(1.)
             print(f"waited {i+1} seconds...")
-    return base_url
+    return SERVERS["LLM"]["url"]
 
 class Llama:
     def __init__(self, fname, n_gpu_layers=0, n_ctx=2048, verbose=False):
@@ -55,11 +52,6 @@ class Llama:
     @property
     def headers(self):
         return {"Accept": "application/json", "Content-Type": "application/json"}
-        
-    def __del__(self):
-        if SERVER["LLM"] and "process" in SERVER["LLM"]:
-            SERVER["LLM"]["process"].kill()
-            del SERVER["LLM"]
 
     def __call__(self, *args: Any, **kwds: Any):
         return self.create_completion(*args,**kwds)
@@ -86,14 +78,15 @@ class Llama:
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         repeat_penalty: float = 1.1,
-        top_k: int = 40,
+        top_k: int = 100,
         stream: bool = False,
         tfs_z: float = 1.0,
-        mirostat_mode: int = 0,
-        mirostat_tau: float = 5.0,
-        mirostat_eta: float = 0.1,
+        mirostat_mode: int = 2,
+        mirostat_tau: float = 4.0,
+        mirostat_eta: float = 0.2,
         grammar: Optional[str] = "",
-        model: str = None
+        model: str = None,
+        **kwargs #extra args
     ):
         """Generate text from a prompt.
 
@@ -129,14 +122,21 @@ class Llama:
             # frequency_penalty=frequency_penalty,
             # presence_penalty=presence_penalty,
             rep_pen=repeat_penalty,
+            rep_pen_range=320,
+            rep_pen_slope=0.7,
             top_k=top_k,
             stream=stream,
             tfs=tfs_z,
+            min_p=0.05,
             mirostat=mirostat_mode,
             mirostat_tau=mirostat_tau,
             mirostat_eta=mirostat_eta,
             # model=model,
-            grammar=grammar
+            grammar=grammar,
+            top_a=0,
+            typical=1,
+            n=1,
+            **kwargs
         )
         if stream:
             chunks: Iterator = completion_or_chunks

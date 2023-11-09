@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 import random
-from webui.utils import ObjectNamespace
+from webui import ObjectNamespace
 from typing import Tuple
 import streamlit as st
 import urllib.request

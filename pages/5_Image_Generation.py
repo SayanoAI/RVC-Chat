@@ -10,15 +10,14 @@ import numpy as np
 import streamlit as st
 import requests
 
-from webui import MENU_ITEMS, get_cwd
+from webui import MENU_ITEMS, SERVERS, ObjectNamespace, get_cwd
+from webui.image_generation import start_server
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.components import active_subprocess_list, st_iframe
 from webui.contexts import ProgressBarContext, SessionStateContext
-from webui.utils import ObjectNamespace, get_cache
 
 CWD = get_cwd()
-SERVER = get_cache("SD")
 
 MAX_INT32 = np.iinfo(np.int32).max
 
@@ -88,18 +87,6 @@ def generate_images(url: str, prompt: dict, timeout=60):
         
     return output
 
-
-@st.cache_resource
-def start_server(host="localhost",port=8188):
-    if SERVER["SD"] and "process" in SERVER["SD"]: return SERVER["SD"]["process"]
-    server = os.path.join(CWD,".cache","ComfyUI","main.py")
-    cmd = f"python {server} --port={port} --listen"
-    p = subprocess.Popen(cmd, shell=True, cwd=CWD)
-    SERVER["SD"] = {
-        "process": p
-    }
-    return p
-
 def initial_state():
     return ObjectNamespace(
         positive="",
@@ -120,8 +107,8 @@ if __name__=="__main__":
         state.url = st.text_input("Server URL", value = f"http://{state.host}:{state.port}")
         placeholder = st.container()
         
-        if st.button("Start Server",disabled=SERVER["SD"] is not None):
-            with ProgressBarContext([1]*5,sleep,"Waiting for invokeai to load") as pb:
+        if st.button("Start Server",disabled=SERVERS["SD"] is not None):
+            with ProgressBarContext([1]*5,sleep,"Waiting for comfyui to load") as pb:
                 start_server(host=state.host,port=state.port)
                 pb.run()
                 st.experimental_rerun()
@@ -148,5 +135,5 @@ if __name__=="__main__":
         if state.images:
             st.image(state.images)
 
-        if SERVER["SD"] is not None: st_iframe(state.url,height=1024)
+        if SERVERS["SD"] is not None: st_iframe(state.url,height=1024)
 

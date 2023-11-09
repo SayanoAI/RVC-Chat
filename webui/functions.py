@@ -1,116 +1,85 @@
+from functools import lru_cache
 import json
 import os
-import random
+import re
+from typing import List
 from webui.downloader import BASE_MODELS_DIR
-from webui.kobold_cpp import Llama
-from webui.utils import ObjectNamespace
-from webui.chat import Character
-import sounddevice as sd
+from webui.image_generation import generate_prompt
+from webui import ObjectNamespace
 
-def chat(char,prompt="Continue the story without me"):
-    print(f"{char.user}: {prompt}")
-    full_response = ""
-    for response in char.generate_text(prompt):
-        full_response += response
-    audio = char.text_to_speech(full_response)
-    if audio: sd.play(*audio)            
-    char.messages.append({"role": char.user, "content": prompt}) #add user prompt to history
-    char.messages.append({
-        "role": char.name,
-        "content": full_response,
-        "audio": audio
-    })
-    print(f"{char.name}: {full_response}")
-    return full_response
+FUNCTION_LIST = [
+    ObjectNamespace(
+        description = "can you draw me a [object]|show me what you look like|send me a picture of [object]|draw a [image] for me|POSITIVE: [keywords]\n\nNEGATIVE: [keywords]",
+        function = "generate_prompt",
+        arguments = ["positive","negative"],
+        positive = "a list of comma separated words that describes the drawing",
+        negative = "a list of comma separated words to avoid in the drawing"
+    ),
+]
+FUNCTION_MAP = ObjectNamespace(
+    generate_prompt=generate_prompt
+)
 
-def get_function(char, query, threshold=1.):
+def get_function(char, query: str, threshold=1.):
     results = char.ltm.get_query(query=query,include=["metadatas", "distances"],type="function",threshold=threshold)
     if len(results): # found function
         metadata = results[0]["metadata"]
         return metadata
     else: return None
 
-def get_args(char, arguments, template, prompt, retries=3):
-    grammar = load_json_grammar()
-    response = char.LLM(f"""
-              <|im_start|>system
-              Complete these arguments ({arguments}) using this template ({template}) while following the user's request.<|im_end|>
-              <|im_start|>user
-              {prompt}<|im_end|>
-              """,grammar=grammar,stop=["<|im_start|>","<|im_end|>"])
+def get_args(char, arguments: str, template: str, prompt: str, context: str, use_grammar=False):
+    grammar = load_json_grammar() if use_grammar else ""
+    print(f"{grammar=}")
+    
     try:
+        prompt_template = char.model_data["config"]["prompt_template"].format(
+            instruction=f"Provide {arguments} as a JSON object based on this template ({template}) using the following data:",
+            context=context,
+            prompt=prompt
+        )
+        print(f"{prompt_template=}")
+        generator = char.LLM(
+            prompt_template,
+            stop=char.model_data["config"]["stop_words"].split(",")+["\n\n"],
+            grammar=grammar,
+            stream=True,
+            max_tokens=256,
+            mirostat_mode = 2,
+            mirostat_tau = 4.0,
+            mirostat_eta = 0.2,
+        )
+        for response in generator: pass
         args = json.loads(response["choices"][0]["text"])
-        if args: args = {k:args[k] for k in args if k in arguments}
+        if args: return {k:args[k] for k in args if k in arguments}
     except Exception as e:
-        print(e)
-        args = get_args(char, arguments, template, prompt, retries-1) if retries>0 else None
-    return args   
+        print(f"failed to parse arguments: {e}")
+        
+    return None
 
+@lru_cache
 def load_json_grammar(fname=os.path.join(BASE_MODELS_DIR,"LLM","json.gbnf")):
     with open(fname,"r") as f:
         grammar = f.read()
     return grammar
 
-functions = [
-    ObjectNamespace(
-        description = "Can you please play [song_name] for me?|I would love to hear you sing song_name.|Can you sing [song_name] for me?|Play [song_name], please.",
-        function = "play_song",
-        arguments = ["name","search"],
-        name = {"type": "string", "description": "name of the song"},
-        search = {"type": "boolean", "description": "search for the song if it doesn't exist"},
-    ),
-    ObjectNamespace(
-        description = "Get the current weather in a [location]|How's the weather in a [location] in [temperature_unit]?|What's the weather like in [location]?",
-        function = "get_current_weather",
-        arguments = ["location","unit"],
-        location = {"type": "string", "description": "location to check"},
-        unit = {"type": "string", "enum": ["celsius", "fahrenheit"], "description": "temperature unit"},
-    ),
-]
+def call_function(character, prompt: str, context: str, threshold=1., retries=3, use_grammar=False):
+    try:
+        metadata = get_function(character, prompt, threshold)
+        if metadata and metadata["function"] in FUNCTION_MAP:
+            while retries>0:
+                args = get_args(character, metadata['arguments'], metadata['template'], prompt, context, use_grammar=use_grammar)
+                print(f"{args=}")
+                if args: return FUNCTION_MAP[metadata["function"]](**args)
+                retries-=1
+    except Exception as e:
+        print(e)
 
-# dummy functions
-def play_song(name,search=False):
-    if search: print(f"Searching song on youtube")
-    return f"playing {name}."
+    return None
 
-def get_current_weather(location, unit="celsius"):
-    """Get the current weather in a given location"""
-
-    temperature = random.randint(10,30)
-    if unit=="fahrenheit": temperature*=3
-    forecast = random.choice(["sunny", "windy"])
-    
-    return f"The temperature in {location} is {temperature} degrees {unit} and {forecast}"
-
-def main():
-    character = Character(
-        character_file="./models/Characters/Amaryllis.json",
-        model_file="./models/LLM/mistral-7b-openorca.Q4_K_M.gguf",
-        user="Player"
-    )
-    character.LLM = Llama(
-        character.model_file,
-        n_ctx=character.model_data["params"]["n_ctx"],
-        n_gpu_layers=character.model_data["params"]["n_gpu_layers"],
-        verbose=True
-    )
-    character.loaded=True
-    character
-    character.ltm.clear()
-    for data in functions:
-        character.ltm.add_function(**data)
-        
-    prompt = "Can you sing despacito for me?"
-    metadata = get_function(character,prompt,threshold=1.)
-    print(f"{metadata=}")
-    if metadata:
-        args = get_args(character, metadata['arguments'], metadata['template'], prompt)
-        print(f"{args=}")
-        if args: print(eval(metadata["function"])(**args))
-    prompt = "How's the weather in Canada in fahrenheit?"
-    metadata = get_function(character,prompt,threshold=1.5)
-    print(f"{metadata=}")
-    if metadata:
-        args = get_args(character, metadata['arguments'], metadata['template'], prompt)
-        print(f"{args=}")
-        if args: print(eval(metadata["function"])(**args))
+def load_functions(vdb):
+    for data in FUNCTION_LIST:
+        descriptions = data["description"].split("|")
+        for description in descriptions:
+            print(description)
+            data["description"] = description
+            vdb.add_function(**data)

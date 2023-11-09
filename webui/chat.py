@@ -3,7 +3,7 @@ import io
 import json
 import os
 import threading
-from webui.utils import ObjectNamespace
+from webui import ObjectNamespace, config
 from webui.kobold_cpp import Llama
 import numpy as np
 from lib.model_utils import get_hash
@@ -13,7 +13,6 @@ from webui.downloader import BASE_MODELS_DIR, OUTPUT_DIR
 import sounddevice as sd
 from webui.utils import gc_collect
 from webui.vector_db import VectorDB
-from . import config
 from vc_infer_pipeline import get_vc, vc_single
 from pydub import AudioSegment
 
@@ -177,7 +176,6 @@ class Character:
         self.max_memory = int(np.sqrt(self.model_data["params"]["n_ctx"]))+1
         self.context = self.build_context("")
         
-    
     def load_character(self,fname):
         self.character_data = load_character_data(fname)
         self.name = self.character_data["assistant_template"]["name"]
