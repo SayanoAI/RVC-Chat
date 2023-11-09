@@ -34,6 +34,8 @@ class ObjectNamespace(dict):
     def __setattr__(self, name: str, value): return self.__setitem__(name, value)
     def __delattr__(self, name: str): return self.__delitem__(name) if name in self.keys() else None
     def __delitem__(self, name: str): return super().__delitem__(name) if name in self.keys() else None
+    def __setstate__(self, state): self.__dict__=state
+    def __getstate__(self): return self.__dict__
 
 class PersistedDict:
     def __init__(self,fname,**kwargs):

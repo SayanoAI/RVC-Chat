@@ -10,6 +10,7 @@ import numpy as np
 import requests
 
 from webui import SERVERS, get_cwd
+from webui.utils import pid_is_active
 
 CWD = get_cwd()
 MAX_INT32 = np.iinfo(np.int32).max
@@ -21,18 +22,24 @@ DEFAULT_SAMPLER = {
 }
 
 def start_server(host="localhost",port=8188):
-    if SERVERS["SD"] and "pid" in SERVERS["SD"]: return SERVERS["SD"]["pid"]
-    main = os.path.join(CWD,".cache","ComfyUI","main.py")
-    cmd = f"python {main} --port={port} --listen"
+    if pid_is_active(None if SERVERS["SD"] is None else SERVERS["SD"].get("pid")): return SERVERS["SD"]["pid"]
+    root = os.path.join(CWD,".cache","ComfyUI")
+    main = os.path.join(root,"main.py")
+    cmd = f"python {main} --port={port}"
+    process = subprocess.Popen(cmd, cwd=root)
     
     SERVERS["SD"] = {
-        "pid": subprocess.Popen(cmd, shell=True, cwd=CWD).pid,
+        "pid": process.pid,
         "url": f"http://{host}:{port}"
     }
     return SERVERS["SD"]["pid"]
 
 @lru_cache
-def generate_prompt(positive,negative="",width=512,height=512,seed=-1,**kwargs):
+def generate_prompt(positive,negative="",width=512,height=512,seed=-1,
+                    positive_prefix="",negative_prefix="",
+                    positive_suffix="",negative_suffix="",
+                    checkpoint="versamix-anime-baked.safetensors",scale=1.5,
+                    **kwargs):
     # Get a compiler
     from pybars import Compiler
     compiler = Compiler()
@@ -49,8 +56,10 @@ def generate_prompt(positive,negative="",width=512,height=512,seed=-1,**kwargs):
     output = template(dict(
         width=width,
         height=height,
-        positive=positive,
-        negative=negative,
+        checkpoint=checkpoint,
+        scale=scale,
+        positive=",".join(i for i in [positive_prefix,positive,positive_suffix] if len(i)),
+        negative=",".join(i for i in [negative_prefix,negative,negative_suffix] if len(i)),
         sampler=dict(
             seed=random.randint(0,MAX_INT32) if seed<0 else seed,
             **sampler

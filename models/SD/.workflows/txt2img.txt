@@ -28,7 +28,7 @@
   },
   "4": {
     "inputs": {
-      "ckpt_name": "versamix-anime-baked.safetensors"
+      "ckpt_name": "{{checkpoint}}"
     },
     "class_type": "CheckpointLoaderSimple"
   },
@@ -73,7 +73,7 @@
   "13": {
     "inputs": {
       "upscale_method": "nearest-exact",
-      "scale_by": 1.5,
+      "scale_by": {{scale}},
       "samples": [
         "3",
         0

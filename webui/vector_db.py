@@ -45,7 +45,9 @@ class VectorDB:
             get_db_client().delete_collection(self.key)
             del self.collection
         except Exception as e: print(f"Failed to delete collection{e}")
-        finally: self.collection, self.key = get_collection_and_key(self.name)
+        finally:
+            self.collection, self.key = get_collection_and_key(self.name)
+            load_functions(self)
 
     def add_function(self,description,function,arguments,**args):
         self.collection.add(ids=[str(uuid4())],documents=description,metadatas={

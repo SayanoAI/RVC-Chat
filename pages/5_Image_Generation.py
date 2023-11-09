@@ -5,6 +5,7 @@ import streamlit as st
 
 from webui import MENU_ITEMS, SERVERS, ObjectNamespace, get_cwd
 from webui.image_generation import generate_images, start_server, generate_prompt
+from webui.utils import pid_is_active
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.components import active_subprocess_list, st_iframe
@@ -36,7 +37,7 @@ if __name__=="__main__":
         state.url = st.text_input("Server URL", value = f"http://{state.host}:{state.port}")
         placeholder = st.container()
         
-        is_active = SERVERS["SD"] is not None and "pid" in SERVERS["SD"] and SERVERS["SD"]["pid"]
+        is_active = pid_is_active(None if SERVERS["SD"] is None else SERVERS["SD"].get("pid"))
         if st.button("Start Server",disabled=is_active):
             with ProgressBarContext([1]*5,sleep,"Waiting for comfyui to load") as pb:
                 start_server(host=state.host,port=state.port)
@@ -45,26 +46,23 @@ if __name__=="__main__":
 
         active_subprocess_list()
 
-        with st.form("generate"):
-            # Create a text input for the user to enter a prompt
-            state.positive = st.text_area("Enter your positive prompt for image generation",value=state.positive)
-            state.negative = st.text_area("Enter your negative prompt for image generation",value=state.negative)
-            c1, c2, c3 = st.columns(3)
-            state.width = c1.number_input("Width",min_value=512,max_value=1024,step=4,value=state.width)
-            state.height = c2.number_input("Height",min_value=512,max_value=1024,step=4,value=state.height)
-            state.seed = c3.number_input("Seed",min_value=-1,max_value=MAX_INT32,step=1,value=state.seed)
-            state.steps = c1.number_input("Steps",min_value=1,max_value=100,step=1,value=state.steps)
-            state.cfg = c2.number_input("CFG",min_value=0.,max_value=15.,step=.1,value=state.cfg)
-            state.name = c3.selectbox("Sampler Name",options=["dpmpp_2m"],index=0)
+        if is_active:
+            with st.form("generate"):
+                # Create a text input for the user to enter a prompt
+                state.positive = st.text_area("Enter your positive prompt for image generation",value=state.positive)
+                state.negative = st.text_area("Enter your negative prompt for image generation",value=state.negative)
+                c1, c2, c3 = st.columns(3)
+                state.width = c1.number_input("Width",min_value=512,max_value=1024,step=4,value=state.width)
+                state.height = c2.number_input("Height",min_value=512,max_value=1024,step=4,value=state.height)
+                state.seed = c3.number_input("Seed",min_value=-1,max_value=MAX_INT32,step=1,value=state.seed)
+                state.steps = c1.number_input("Steps",min_value=1,max_value=100,step=1,value=state.steps)
+                state.cfg = c2.number_input("CFG",min_value=0.,max_value=15.,step=.1,value=state.cfg)
+                state.name = c3.selectbox("Sampler Name",options=["dpmpp_2m"],index=0)
 
-            # Create a button to submit the prompt and generate the image
-            if st.form_submit_button("Generate"):
-                state.prompt = generate_prompt(state.positive,negative=state.negative,seed=state.seed)
-                state.images = generate_images(prompt=state.prompt)
-        
-        if state.images:
-            st.image(state.images)
-
-        if is_active: st_iframe(state.url,height=1024)
-        else: st.write(SERVERS["SD"])
-
+                # Create a button to submit the prompt and generate the image
+                if st.form_submit_button("Generate"):
+                    state.prompt = generate_prompt(state.positive,negative=state.negative,seed=state.seed)
+                    state.images = generate_images(prompt=state.prompt)
+            
+            if state.images:
+                st.image(state.images)

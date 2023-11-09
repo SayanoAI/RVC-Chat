@@ -7,29 +7,31 @@ st.set_page_config("RVC Chat",layout="centered",menu_items=MENU_ITEMS)
 
 from webui.components import file_downloader, file_uploader_form
 
-from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, download_link_generator
+from webui.downloader import BASE_CACHE_DIR, BASE_MODELS, BASE_MODELS_DIR, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, SD_MODELS, download_link_generator, git_install
 
 CWD = get_cwd()
 
 from webui.contexts import ProgressBarContext
 
-def render_download_ffmpeg(lib_name="ffmpeg.exe"):
+def render_download_lib(lib_name: str):
     col1, col2 = st.columns(2)
     is_downloaded = os.path.exists(lib_name)
     col1.checkbox(os.path.basename(lib_name),value=is_downloaded,disabled=True)
     if col2.button("Download",disabled=is_downloaded,key=lib_name):
-        link = f"{RVC_DOWNLOAD_LINK}ffmpeg.exe"
+        link = f"{RVC_DOWNLOAD_LINK}{lib_name}"
         file_downloader((lib_name,link))
         st.experimental_rerun()
 
-def render_download_koboldcpp(lib_name="koboldcpp.exe"):
+def render_install_git(dir: str):
     col1, col2 = st.columns(2)
-    is_downloaded = os.path.exists(lib_name)
-    col1.checkbox(os.path.basename(lib_name),value=is_downloaded,disabled=True)
-    if col2.button("Download",disabled=is_downloaded,key=lib_name):
-        link = f"{RVC_DOWNLOAD_LINK}koboldcpp.exe"
-        file_downloader((lib_name,link))
-        st.experimental_rerun()
+    for url in SD_MODELS:
+        lib_name = os.path.basename(url)
+        location = os.path.join(dir, lib_name)
+        is_downloaded = os.path.exists(location)
+        col1.checkbox(lib_name,value=is_downloaded,disabled=True)
+        if col2.button("Install",disabled=is_downloaded,key=lib_name):
+            git_install(url, location)
+            st.experimental_rerun()
 
 def render_model_checkboxes(generator):
     not_downloaded = []
@@ -63,8 +65,9 @@ if __name__=="__main__":
 
     with st.container():
         if platform.system() == "Windows":
-            render_download_ffmpeg()
-            render_download_koboldcpp()
+            render_download_lib("ffmpeg.exe")
+            render_download_lib("koboldcpp.exe")
+            render_install_git(BASE_CACHE_DIR)
         elif platform.system() == "Linux":
             st.markdown("run `apt update && apt install -y -qq ffmpeg espeak` in your terminal")
 

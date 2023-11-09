@@ -1,3 +1,4 @@
+import subprocess
 from typing import IO, List, Tuple
 import requests
 import os
@@ -36,9 +37,31 @@ LLM_MODELS = [
     "https://huggingface.co/TheBloke/Mythalion-13B-GGUF/resolve/main/mythalion-13b.Q4_K_M.gguf",
     "https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF/resolve/main/openhermes-2.5-mistral-7b.Q4_K_M.gguf"
 ]
+SD_MODELS = [
+    "https://github.com/comfyanonymous/ComfyUI"
+]
 STT_MODELS = [
     "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip"
 ]
+
+def pip_install(*args: List[str]):
+    cmd_pip = ["pip","install",*args]
+    try:    
+        subprocess.check_call(cmd_pip)
+        return True
+    except Exception as e:
+        print(f"failed to run {cmd_pip}: {e}")
+    return False
+
+def git_install(url: str, location: str):
+    cmd_git = ["git","clone",url,location]
+    try:
+        subprocess.check_call(cmd_git)
+        req = os.path.join(location,"requirements.txt")
+        return pip_install("-r",req)
+    except Exception as e:
+        print(f"failed to run {cmd_git}: {e}")
+    return False
 
 def download_file(params: Tuple[str, str]):
     model_path, download_link = params

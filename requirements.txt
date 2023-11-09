@@ -44,3 +44,4 @@ pyaudio==0.2.13
 chromadb
 pydub
 pybars3
+sumy

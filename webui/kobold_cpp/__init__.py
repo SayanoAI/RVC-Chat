@@ -7,17 +7,18 @@ from typing import Any, Iterator, List, Optional, Union
 import requests
 import asyncio
 from webui import SERVERS, get_cwd
+from webui.utils import pid_is_active
 
 CWD = get_cwd()
 
 def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=2048):
-    if SERVERS["LLM"] and "url" in SERVERS["LLM"]:
+    if pid_is_active(None if SERVERS["LLM"] is None else SERVERS["LLM"].get("pid")):
         # change model later
         return SERVERS["LLM"]["url"]
     
     base_url = f"http://{host}:{port}/api"
     cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={gpulayers} --contextsize={contextsize} --skiplauncher --multiuser --smartcontext --usecublas"
-    process = subprocess.Popen(cmd, shell=True, cwd=CWD)
+    process = subprocess.Popen(cmd, cwd=CWD)
     for i in range(60): # wait for server to start up
         try:
             with requests.get(base_url) as req:
