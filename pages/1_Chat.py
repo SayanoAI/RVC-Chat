@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from webui import MENU_ITEMS, SERVERS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
+from webui import MENU_ITEMS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
 from webui.chat import Character
 from webui.downloader import OUTPUT_DIR
 from webui.functions import call_function
@@ -48,7 +48,7 @@ def refresh_data(state):
 
 if __name__=="__main__":
     with SessionStateContext("chat",init_state()) as state:
-
+        
         st.title("RVC Chat")
 
         hint = st.empty()
@@ -133,6 +133,8 @@ if __name__=="__main__":
                     if col2.button("Delete",key=f"Delete{i}"):
                         st.toast(f"Deleted message: {state.character.messages.pop(i)}")
                         st.experimental_rerun()
+                    if msg.get("image"):
+                        st.image(msg.get("image"))
 
             # container = st.container()
             c1,c2,c3,c4 = st.columns(4)
@@ -147,16 +149,18 @@ if __name__=="__main__":
                     st.chat_message(state.character.user).write(prompt)
                 
                 full_response = ""
+                images = None
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
                     for response in state.character.generate_text("Continue the story without me" if state.character.autoplay else prompt):
                         full_response = response
                         message_placeholder.markdown(full_response)
 
-                    image_prompt = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=2) # calls function
+                    image_prompt = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=2,verbose=True) # calls function
                     if image_prompt:
-                        images = generate_images(SERVERS["SD"]["url"],image_prompt)
-                        st.image(images)
+                        with st.spinner("generating image"):
+                            images = generate_images(image_prompt)
+                            st.image(images)
 
                 if state.character.has_voice:
                     audio = state.character.text_to_speech(full_response)
@@ -172,7 +176,8 @@ if __name__=="__main__":
                 state.character.messages.append({
                     "role": state.character.name,
                     "content": full_response,
-                    "audio": audio
+                    "audio": audio,
+                    "image": images
                     })
                 if state.character.autoplay:
                     st.experimental_rerun()

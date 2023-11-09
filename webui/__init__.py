@@ -1,9 +1,11 @@
 from functools import lru_cache
 import os
+import shelve
 import sys
 import weakref
 from config import Config
 from i18n import I18nAuto
+import streamlit as st
 
 MENU_ITEMS = {
     "Get help": "https://github.com/SayanoAI/RVC-Chat/discussions",
@@ -32,6 +34,22 @@ class ObjectNamespace(dict):
     def __setattr__(self, name: str, value): return self.__setitem__(name, value)
     def __delattr__(self, name: str): return self.__delitem__(name) if name in self.keys() else None
     def __delitem__(self, name: str): return super().__delitem__(name) if name in self.keys() else None
+
+class PersistedDict:
+    def __init__(self,fname,**kwargs):
+        self.fname = fname
+        with shelve.open(fname) as shelf:
+            for k in kwargs:
+                shelf[k] = kwargs[k]
+            print(f"{shelf=}")
+
+    def __getitem__(self, name: str):
+        with shelve.open(self.fname) as shelf:
+            return shelf.get(name,None)
+        
+    def __setitem__(self, name: str, value):
+        with shelve.open(self.fname) as shelf:
+            shelf[name] = value
     
 @lru_cache
 def load_config():
@@ -44,9 +62,10 @@ def get_cwd():
         sys.path.append(CWD)
     return CWD
 
-@lru_cache
+@lru_cache(maxsize=None)
 def get_servers():
-    return ObjectNamespace(__name__="servers")
+    servers = PersistedDict(os.path.join(get_cwd(),".cache","servers.shelve"))
+    return servers
 
 config, i18n = load_config()
 SERVERS = get_servers()

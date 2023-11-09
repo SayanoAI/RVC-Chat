@@ -20,18 +20,18 @@ DEFAULT_SAMPLER = {
     "name": "dpmpp_2m"
 }
 
-@lru_cache
 def start_server(host="localhost",port=8188):
-    if SERVERS["SD"] and "process" in SERVERS["SD"]: return SERVERS["SD"]["process"]
+    if SERVERS["SD"] and "pid" in SERVERS["SD"]: return SERVERS["SD"]["pid"]
     main = os.path.join(CWD,".cache","ComfyUI","main.py")
     cmd = f"python {main} --port={port} --listen"
     
     SERVERS["SD"] = {
-        "process": subprocess.Popen(cmd, shell=True, cwd=CWD),
+        "pid": subprocess.Popen(cmd, shell=True, cwd=CWD).pid,
         "url": f"http://{host}:{port}"
     }
-    return SERVERS["SD"]["process"]
+    return SERVERS["SD"]["pid"]
 
+@lru_cache
 def generate_prompt(positive,negative="",width=512,height=512,seed=-1,**kwargs):
     # Get a compiler
     from pybars import Compiler
@@ -59,7 +59,8 @@ def generate_prompt(positive,negative="",width=512,height=512,seed=-1,**kwargs):
 
     return json.loads(output)
 
-def generate_images(url: str, prompt: dict, timeout=60):
+def generate_images(prompt: dict, url = None, timeout=60):
+    if url is None: url = SERVERS["SD"]["url"]
     prompt_id = None
     images = output = []
 

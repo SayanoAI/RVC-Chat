@@ -24,13 +24,13 @@ def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=20
                 if req.status_code==200:
                     SERVERS["LLM"] = {
                         "url": base_url,
-                        "process": process
+                        "pid": process.pid
                     }
                     break
         except Exception:
             sleep(1.)
             print(f"waited {i+1} seconds...")
-    return SERVERS["LLM"]["url"]
+    return base_url
 
 class Llama:
     def __init__(self, fname, n_gpu_layers=0, n_ctx=2048, verbose=False):

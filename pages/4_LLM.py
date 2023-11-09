@@ -37,19 +37,21 @@ def initial_state():
 
 if __name__=="__main__":
     with SessionStateContext("llm_api",initial_state()) as state:
-        state.remote_bind = st.checkbox("Bind to 0.0.0.0 (Required for docker or remote connections)", value=state.remote_bind)
-        state.host = "0.0.0.0" if state.remote_bind else "localhost"
-        state.port = st.number_input("Port", value=state.port or 8000)
-        state.url = st.text_input("Server URL", value = f"http://{state.host}:{state.port}/api")
-        state = render_model_params_form(state)
+        is_active = SERVERS["LLM"] is not None and "process" in SERVERS["LLM"] and SERVERS["LLM"]["pid"]
 
-        if st.button("Start Server",disabled=SERVERS["LLM"] is not None):
-            with ProgressBarContext([1]*5,sleep,"Waiting for koboldcpp to load") as pb:
-                start_server(state.model,host=state.host,port=state.port)
-                pb.run()
-                st.experimental_rerun()
+        with st.form("LLM form"):
+            state.remote_bind = st.checkbox("Bind to 0.0.0.0 (Required for docker or remote connections)", value=state.remote_bind)
+            state.host = "0.0.0.0" if state.remote_bind else "localhost"
+            state.port = st.number_input("Port", value=state.port or 8000)
+            state.url = st.text_input("Server URL", value = f"http://{state.host}:{state.port}/api")
+            state = render_model_params_form(state)
+
+            if st.form_submit_button("Start Server",disabled=is_active):
+                with ProgressBarContext([1]*5,sleep,"Waiting for koboldcpp to load") as pb:
+                    start_server(state.model,host=state.host,port=state.port,gpulayers=state.n_gpu_layers, contextsize=state.n_ctx)
+                    pb.run()
+                    st.experimental_rerun()
                 
         active_subprocess_list()
         
-        if SERVERS["LLM"] and SERVERS["LLM"]["url"]:
-            st_iframe(url=SERVERS["LLM"]["url"],height=800)
+        if is_active: st_iframe(url=SERVERS["LLM"]["url"],height=800)
