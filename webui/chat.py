@@ -49,7 +49,7 @@ def init_model_data(): return ObjectNamespace(
 def init_assistant_template(): return ObjectNamespace(
         background = "",
         personality = "",
-        appearance = "",
+        appearance = {},
         scenario = "",
         examples = [{"role": "", "content": ""}],
         greeting = "",
@@ -443,15 +443,12 @@ class Character:
         ])
             
         persona = "\n".join(
-            f"{key.upper()}: {assistant_template[key]}"
+            f"{key.upper()}: {json.dumps(assistant_template[key]) if key=='appearance' else assistant_template[key]}"
             for key in ["background","personality","appearance","scenario"]
             if assistant_template[key]
         )
 
-        context = "\n\n".join([f"PERSONA\n{persona}",f"EXAMPLES\n{examples}",f"HISTORY\n{history}",messages]).format(
-            char=assistant_template["name"],
-            user=self.user
-        )
+        context = "\n\n".join([f"PERSONA\n{persona}",f"EXAMPLES\n{examples}",f"HISTORY\n{history}",messages])
 
         instruction = model_config["instruction"].format(
             char=assistant_template["name"],

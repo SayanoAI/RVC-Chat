@@ -1,11 +1,13 @@
 import json
 import os
+import random
 import streamlit as st
 from webui import MENU_ITEMS, TTS_MODELS, ObjectNamespace, get_cwd, i18n
 from webui.chat import init_assistant_template, init_tts_options, load_character_data
+from webui.image_generation import MAX_INT32, generate_images, generate_prompt
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
-from webui.components import voice_conversion_form
+from webui.components import image_generation_form, initial_image_generation_state, voice_conversion_form
 
 from webui.contexts import SessionStateContext
 
@@ -13,12 +15,8 @@ from webui.utils import get_filenames, get_index
 
 CWD = get_cwd()
 
-def get_model_list():
-    models_list =  [os.path.relpath(path,CWD) for path in get_filenames(root=os.path.join(CWD,"models"),folder="LLM",exts=["bin","gguf"])]
-    return models_list
-
 def get_voice_list():
-    models_list = [os.path.relpath(path,CWD) for path in get_filenames(root=os.path.join(CWD,"models"),folder="RVC",exts=["pth"])]
+    models_list = [""] + [os.path.relpath(path,CWD) for path in get_filenames(root=os.path.join(CWD,"models"),folder="RVC",exts=["pth"])]
     return models_list
 
 def get_character_list():
@@ -31,6 +29,7 @@ def init_state():
         characters=get_character_list(),
         assistant_template=init_assistant_template(),
         tts_options=init_tts_options(),
+        preview=None
     )
     return state
 
@@ -89,7 +88,8 @@ def render_assistant_template_form(state):
     ROLE_OPTIONS = ["CHARACTER", "USER"]
     state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background)
     state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality)
-    state.assistant_template.appearance = st.text_area("Appearance", value=state.assistant_template.appearance)
+    # state.assistant_template.appearance = st.text_area("Appearance", value=state.assistant_template.appearance)
+    st.write(f"Appearance: {json.dumps(state.assistant_template.appearance)}")
     state.assistant_template.scenario = st.text_area("Scenario", value=state.assistant_template.scenario)
     st.write("Example Dialogue")
     state.assistant_template.examples = st.data_editor(state.assistant_template.examples,
@@ -114,8 +114,22 @@ def render_character_form(state):
             state = render_tts_options_form(state)
         with template_tab:
             state = render_assistant_template_form(state)
-        if st.form_submit_button("Save"):
+        if st.form_submit_button("Save",type="primary"):
             state = save_character(state)
+
+    with st.expander("Customize your appearance",expanded=True):
+        if type(state.assistant_template.appearance)==str:
+            default_state = initial_image_generation_state()
+            default_state["positive"] = state.assistant_template.appearance
+            state.assistant_template.appearance = default_state
+        
+        state.assistant_template.appearance = image_generation_form(ObjectNamespace(**state.assistant_template.appearance))
+        if st.button("Generate"):
+            if state.assistant_template.appearance.randomize or state.assistant_template.appearance.seed<0:
+                state.assistant_template.appearance.seed=random.randint(0,MAX_INT32)
+            prompt = generate_prompt(**state.assistant_template.appearance)
+            state.preview = generate_images(prompt=prompt)
+            st.experimental_rerun()
     
     return state
 
@@ -133,3 +147,4 @@ if __name__=="__main__":
                                             index=get_index(state.characters,state.selected_character),
                                             format_func=lambda x: os.path.basename(x))
         state = render_character_form(state)
+        if state.preview: st.image(state.preview)

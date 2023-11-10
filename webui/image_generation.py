@@ -1,6 +1,5 @@
 
 
-from functools import lru_cache
 import json
 import os
 import random
@@ -20,6 +19,7 @@ DEFAULT_SAMPLER = {
     "cfg": 7.5,
     "name": "dpmpp_2m"
 }
+SAMPLER_OPTIONS = ["dpmpp_2m","euler_ancestral","dpmpp_sde","dpmpp_2m_sde","dpmpp_3m_sde"]
 
 def start_server(host="localhost",port=8188):
     if pid_is_active(None if SERVERS["SD"] is None else SERVERS["SD"].get("pid")): return SERVERS["SD"]["pid"]
@@ -34,11 +34,10 @@ def start_server(host="localhost",port=8188):
     }
     return SERVERS["SD"]["pid"]
 
-@lru_cache
-def generate_prompt(positive,negative="",width=512,height=512,seed=-1,
-                    positive_prefix="",negative_prefix="",
-                    positive_suffix="",negative_suffix="",
-                    checkpoint="versamix-anime-baked.safetensors",scale=1.5,
+def generate_prompt(positive,negative="",width=512,height=512,seed=-1,randomize=False,
+                    positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
+                    positive_suffix="",negative_suffix="(embedding:bad_pictures:.8)",
+                    checkpoint="sayano-anime.safetensors",scale=1.5,
                     **kwargs):
     # Get a compiler
     from pybars import Compiler
@@ -58,14 +57,13 @@ def generate_prompt(positive,negative="",width=512,height=512,seed=-1,
         height=height,
         checkpoint=checkpoint,
         scale=scale,
-        positive=",".join(i for i in [positive_prefix,positive,positive_suffix] if len(i)),
-        negative=",".join(i for i in [negative_prefix,negative,negative_suffix] if len(i)),
+        positive=", ".join(json.dumps(i) for i in [positive_prefix,positive,positive_suffix] if len(i)),
+        negative=", ".join(json.dumps(i) for i in [negative_prefix,negative,negative_suffix] if len(i)),
         sampler=dict(
-            seed=random.randint(0,MAX_INT32) if seed<0 else seed,
+            seed=random.randint(0,MAX_INT32) if seed<0 or randomize else seed,
             **sampler
         )
     ))
-
     return json.loads(output)
 
 def generate_images(prompt: dict, url = None, timeout=60):

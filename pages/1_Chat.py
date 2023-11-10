@@ -3,7 +3,7 @@ import streamlit as st
 from webui import MENU_ITEMS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
 from webui.chat import Character
 from webui.downloader import OUTPUT_DIR
-from webui.functions import call_function, load_functions
+from webui.functions import call_function
 from webui.image_generation import generate_images
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
@@ -34,6 +34,7 @@ def init_state():
         messages = [],
         user = "User",
         memory=10,
+        threshold=1.5,
         character=None,
         device=get_optimal_torch_device(),
     )
@@ -67,7 +68,7 @@ if __name__=="__main__":
                                 index=get_index(state.model_list,state.selected_llm),
                                 format_func=lambda x: os.path.basename(x))
         
-        state.memory = col1.select_slider("Memory",options=range(0,22,2),value=state.memory)
+        state.threshold = col1.select_slider("How easily to trigger function calls (0 is never trigger, AI can always reject your request)",options=[0,0.5,1,1.5,2],value=state.threshold)
 
         with col2:
             c1, c2 = st.columns(2)
@@ -156,7 +157,7 @@ if __name__=="__main__":
                         full_response = response
                         message_placeholder.markdown(full_response)
 
-                    image_prompt = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=1.5,verbose=True) # calls function
+                    image_prompt = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=state.threshold,verbose=True) # calls function
                     if image_prompt:
                         with st.spinner("generating image"):
                             images = generate_images(image_prompt)

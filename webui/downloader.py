@@ -38,6 +38,10 @@ LLM_MODELS = [
     "https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF/resolve/main/openhermes-2.5-mistral-7b.Q4_K_M.gguf"
 ]
 SD_MODELS = [
+    "SD/sayano-anime.safetensors",
+    "SD/sayano-realistic.safetensors"
+]
+GIT_REPOS = [
     "https://github.com/comfyanonymous/ComfyUI"
 ]
 STT_MODELS = [

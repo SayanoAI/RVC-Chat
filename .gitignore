@@ -4,6 +4,7 @@ __pycache__
 *.pyd
 *.pt
 *.pth
+*.safetensors
 *.exe
 *.bin
 *.bk

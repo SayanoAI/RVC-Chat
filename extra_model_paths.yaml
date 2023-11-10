@@ -1,0 +1,5 @@
+#Rename this to extra_model_paths.yaml and ComfyUI will load it
+
+comfyui:
+    checkpoints: ../../models/SD
+    embeddings: ../../models/SD/embeddings

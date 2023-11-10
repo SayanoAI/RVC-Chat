@@ -11,13 +11,14 @@ from webui.utils import pid_is_active
 
 CWD = get_cwd()
 
-def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=2048):
+def start_server(model, host="localhost", port=8000, n_gpu_layers=0, n_ctx=2048):
     if pid_is_active(None if SERVERS["LLM"] is None else SERVERS["LLM"].get("pid")):
         # change model later
         return SERVERS["LLM"]["url"]
     
     base_url = f"http://{host}:{port}/api"
-    cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={gpulayers} --contextsize={contextsize} --skiplauncher --multiuser --smartcontext --usecublas"
+    cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={n_gpu_layers} --contextsize={n_ctx} --skiplauncher --multiuser --smartcontext --usecublas"
+    print(f"{cmd=}")
     process = subprocess.Popen(cmd, cwd=CWD)
     for i in range(60): # wait for server to start up
         try:
@@ -35,7 +36,7 @@ def start_server(model, host="localhost", port=8000, gpulayers=0, contextsize=20
 
 class Llama:
     def __init__(self, fname, n_gpu_layers=0, n_ctx=2048, verbose=False):
-        self.base_url = start_server(fname, gpulayers=n_gpu_layers, contextsize=n_ctx)
+        self.base_url = start_server(fname, n_gpu_layers=n_gpu_layers, n_ctx=n_ctx)
         self.verbose = verbose
 
     @property

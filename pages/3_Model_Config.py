@@ -115,7 +115,7 @@ def render_llm_form(state):
         with st.expander("LLM Options"):
             state = render_llm_options_form(state)
 
-        if st.form_submit_button("Save Configs",disabled=not state.selected_llm):
+        if st.form_submit_button("Save Configs",disabled=not state.selected_llm,type="primary"):
             state.model_params.fname = state.selected_llm
             state = save_model_config(state)
     return state

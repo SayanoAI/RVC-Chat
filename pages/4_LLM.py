@@ -46,6 +46,7 @@ if __name__=="__main__":
             index=get_index(get_model_list(),state.model),
             format_func=lambda x: os.path.basename(x))
         state.params = get_params(state.model)
+        st.write(state.params)
 
         with st.form("LLM form"):
             state.remote_bind = st.checkbox("Bind to 0.0.0.0 (Required for docker or remote connections)", value=state.remote_bind)
@@ -56,7 +57,11 @@ if __name__=="__main__":
 
             if st.form_submit_button("Start Server",disabled=is_active):
                 with ProgressBarContext([1]*5,sleep,"Waiting for koboldcpp to load") as pb:
-                    start_server(state.model,host=state.host,port=state.port,gpulayers=state.n_gpu_layers, contextsize=state.n_ctx)
+                    start_server(state.model,
+                                 host=state.host,
+                                 port=state.port,
+                                 n_gpu_layers=state.params.n_gpu_layers,
+                                 n_ctx=state.params.n_ctx)
                     pb.run()
                     st.experimental_rerun()
                 
