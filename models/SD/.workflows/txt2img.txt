@@ -84,7 +84,7 @@
   "14": {
     "inputs": {
       "seed": {{sampler.seed}},
-      "steps": 15,
+      "steps": {{sampler.steps}},
       "cfg": {{sampler.cfg}},
       "sampler_name": "{{sampler.name}}",
       "scheduler": "karras",

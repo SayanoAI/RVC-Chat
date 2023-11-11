@@ -64,7 +64,7 @@ def convert_to_ascii(text):
   return unidecode(text)
 
 def strip_narratives(text):
-  return re.sub(r'([A-Za-z]+:|[*#]+.+?[*#]+)', '', text, flags=re.MULTILINE)
+  return re.sub(r'([A-Za-z]+:|[*#\(\{\[]+.+?[*#\)\}\]]+)', '', text, flags=re.MULTILINE)
 
 def basic_cleaners(text):
   '''Basic pipeline that lowercases and collapses whitespace without transliteration.'''

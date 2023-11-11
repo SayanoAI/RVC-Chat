@@ -49,7 +49,18 @@ def init_model_data(): return ObjectNamespace(
 def init_assistant_template(): return ObjectNamespace(
         background = "",
         personality = "",
-        appearance = {},
+        appearance = dict(
+            positive="",
+            negative="",
+            seed=-1,
+            width=512,
+            height=512,
+            steps=20,
+            cfg=7.5,
+            name="dpmpp_2m",
+            randomize=True,
+            checkpoint="sayano-anime.safetensors"
+        ),
         scenario = "",
         examples = [{"role": "", "content": ""}],
         greeting = "",
@@ -244,10 +255,10 @@ class Character:
             return f"Failed to load character: {e}"
 
     def unload(self):
-        if self.LLM: del self.LLM
-        if self.voice_model: del self.voice_model
-        if self.stt_models: del self.stt_models
-        if self.recognizer: del self.recognizer
+        if hasattr(self,"LLM"): del self.LLM
+        if hasattr(self,"voice_model"): del self.voice_model
+        if hasattr(self,"stt_models"): del self.stt_models
+        if hasattr(self,"recognizer"): del self.recognizer
         self.LLM = self.voice_model = self.stt_models = self.recognizer = None
         gc_collect()
         self.loaded=False
@@ -481,6 +492,7 @@ class Character:
 
     # Define a method to convert text to speech
     def text_to_speech(self, text):
+        if not os.path.isfile(self.character_data["voice"]): return None
         if self.voice_model is None: self.voice_model = get_vc(self.character_data["voice"],config=config,device=self.device)
         tts_audio = generate_speech(text,method=self.character_data["tts_method"], dialog_only=True)
         output_audio = vc_single(input_audio=tts_audio,**self.voice_model,**self.character_data["tts_options"])

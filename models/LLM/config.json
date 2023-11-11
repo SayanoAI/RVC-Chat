@@ -265,8 +265,8 @@
     "version": 2,
     "params": {
       "fname": "models\\LLM\\mythalion-13b.Q4_K_M.gguf",
-      "n_ctx": 4096,
-      "n_gpu_layers": 64
+      "n_ctx": 8192,
+      "n_gpu_layers": 24
     },
     "config": {
       "prompt_template": "### Instruction:\n{instruction}\n\n{context}\n### Input:\n{prompt}\n### Response:\n",
@@ -281,8 +281,8 @@
     "options": {
       "top_k": 42,
       "repeat_penalty": 1.1,
-      "frequency_penalty": 0.0,
-      "presence_penalty": 0.0,
+      "frequency_penalty": 1.0,
+      "presence_penalty": 1.0,
       "mirostat_mode": 2,
       "mirostat_tau": 4.0,
       "mirostat_eta": 0.2,

@@ -137,14 +137,19 @@ if __name__=="__main__":
                     if msg.get("image"):
                         st.image(msg.get("image"))
 
-            # container = st.container()
-            c1,c2,c3,c4 = st.columns(4)
+            action_placeholder = st.empty()
+            prompt=st.chat_input(disabled=chat_disabled or state.character.autoplay)
+
+            c1,c2,c3,c4 = action_placeholder.columns(4)
             if c1.button("Summarize Context"):
                 st.write(state.character.summarize_context())
-            elif c2.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
+            if c2.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
                 state.character.toggle_autoplay()
-
-            if prompt:=st.chat_input(disabled=chat_disabled or state.character.autoplay) or state.character.autoplay:
+            if c3.button("Regenerate"):
+                state.character.messages.pop()
+                prompt = state.character.messages.pop()["content"]
+            
+            if state.character.autoplay or prompt:
                 state.character.is_recording=False
                 if not state.character.autoplay:
                     st.chat_message(state.character.user).write(prompt)
@@ -157,11 +162,13 @@ if __name__=="__main__":
                         full_response = response
                         message_placeholder.markdown(full_response)
 
-                    image_prompt = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=state.threshold,verbose=True) # calls function
-                    if image_prompt:
+                    response = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=state.threshold,verbose=True) # calls function
+                    if response is not None:
+                        function_name, args, image_prompt = response
                         with st.spinner("generating image"):
                             images = generate_images(image_prompt)
                             st.image(images)
+                            full_response += f"\n\n**{function_name}({args})**"
 
                 if state.character.has_voice:
                     audio = state.character.text_to_speech(full_response)
@@ -173,6 +180,7 @@ if __name__=="__main__":
             
                 if not state.character.autoplay:
                     state.character.messages.append({"role": state.character.user, "content": prompt}) #add user prompt to history
+                    prompt = ""
                 
                 state.character.messages.append({
                     "role": state.character.name,
@@ -180,8 +188,8 @@ if __name__=="__main__":
                     "audio": audio,
                     "image": images
                     })
-                if state.character.autoplay:
-                    st.experimental_rerun()
+                # if state.character.autoplay:
+                st.experimental_rerun()
 
             
             

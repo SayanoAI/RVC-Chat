@@ -9,7 +9,7 @@ from webui.image_generation import generate_images, start_server, generate_promp
 from webui.utils import pid_is_active
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
-from webui.components import active_subprocess_list, image_generation_form, initial_image_generation_state, st_iframe
+from webui.components import active_subprocess_list, image_generation_form, initial_image_generation_state
 from webui.contexts import ProgressBarContext, SessionStateContext
 
 CWD = get_cwd()
@@ -33,17 +33,19 @@ if __name__=="__main__":
                 pb.run()
                 st.experimental_rerun()
 
-        active_subprocess_list()
-
         if is_active:
             with st.form("generate"):
                 state = image_generation_form(state)
 
                 # Create a button to submit the prompt and generate the image
                 if st.form_submit_button("Generate"):
-                    state.prompt = generate_prompt(state.positive,negative=state.negative,seed=state.seed)
-                    state.images = generate_images(prompt=state.prompt)
+                    if state.randomize or state.seed<0:
+                        state.seed=random.randint(0,MAX_INT32)
+                    prompt = generate_prompt(**state)
+                    state.images = generate_images(prompt=prompt)
                     st.experimental_rerun()
             
             if state.images:
                 st.image(state.images)
+
+        active_subprocess_list()

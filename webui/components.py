@@ -10,7 +10,7 @@ import urllib.request
 from webui import PITCH_EXTRACTION_OPTIONS, get_cwd, i18n
 from webui.contexts import ProgressBarContext
 from webui.downloader import save_file, save_file_generator
-from webui.image_generation import MAX_INT32, SAMPLER_OPTIONS
+from webui.image_generation import MAX_INT32, ORIENTATION_OPTIONS, SAMPLER_OPTIONS
 from webui.utils import gc_collect, get_filenames, get_index, get_subprocesses
 
 CWD = get_cwd()
@@ -239,33 +239,36 @@ def st_iframe(url: str, width=None, height=None, scrolling=False):
 def initial_image_generation_state():
     return ObjectNamespace(
         positive="",
+        positive_suffix="",
         negative="",
         seed=-1,
-        width=512,
-        height=512,
+        orientation="square",
         steps=20,
         cfg=7.5,
         name="dpmpp_2m",
         randomize=True,
         checkpoint="sayano-anime.safetensors"
     )
-@st.cache_data
+
 def get_sd_model_name(): return [os.path.basename(fname) for fname in get_filenames("./models","SD",["safetensors","ckpt"])]
 
 def image_generation_form(state=initial_image_generation_state()):
     # Create a text input for the user to enter a prompt
-    state.positive = st.text_area("Enter your positive prompt for image generation",value=state.positive)
-    state.negative = st.text_area("Enter your negative prompt for image generation",value=state.negative)
+    st.write("Positive Prompts")
+    state.positive = st.text_area("Everything you want to include in the image (e.g. animals, accessories, actions, etc.)",value=state.positive)
+    state.positive_suffix = st.text_area("Physical appearance (e.g. hair color, eye color, clothes, etc.)",value=state.positive_suffix)
+
+    st.write("Negative Prompts")
+    state.negative = st.text_area("Everything to fix or remove from the drawing (e.g. extra fingers, missing limbs, errors, etc.)",value=state.negative)
     c1, c2, c3 = st.columns(3)
     state.randomize = st.checkbox("Randomize Seed",value=state.randomize)
 
-    state.width = c1.number_input("Width",min_value=512,max_value=1024,step=4,value=state.width)
-    state.height = c2.number_input("Height",min_value=512,max_value=1024,step=4,value=state.height)
+    state.orientation = c1.radio("Orientation",horizontal=True,options=ORIENTATION_OPTIONS,index=get_index(ORIENTATION_OPTIONS,state.width))
     state.seed = c3.number_input("Seed",min_value=-1,max_value=MAX_INT32,step=1,value=state.seed,disabled=state.randomize)
     state.steps = c1.number_input("Steps",min_value=1,max_value=100,step=1,value=state.steps)
     state.cfg = c2.number_input("CFG",min_value=0.,max_value=15.,step=.1,value=state.cfg)
     state.name = c3.selectbox("Sampler Name",options=SAMPLER_OPTIONS,index=get_index(SAMPLER_OPTIONS,state.name))
     MODEL_OPTIONS = get_sd_model_name()
-    state.checkpoint = c1.selectbox("Checkpoint Name",options=MODEL_OPTIONS,index=get_index(MODEL_OPTIONS,state.checkpoint))
+    state.checkpoint = st.selectbox("Checkpoint Name",options=MODEL_OPTIONS,index=get_index(MODEL_OPTIONS,state.checkpoint))
 
     return state

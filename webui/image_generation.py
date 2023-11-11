@@ -20,6 +20,8 @@ DEFAULT_SAMPLER = {
     "name": "dpmpp_2m"
 }
 SAMPLER_OPTIONS = ["dpmpp_2m","euler_ancestral","dpmpp_sde","dpmpp_2m_sde","dpmpp_3m_sde"]
+ORIENTATION_OPTIONS = ["square", "portrait", "landscape"]
+STYLE_OPTIONS = ["anime", "realistic"]
 
 def start_server(host="localhost",port=8188):
     if pid_is_active(None if SERVERS["SD"] is None else SERVERS["SD"].get("pid")): return SERVERS["SD"]["pid"]
@@ -34,10 +36,10 @@ def start_server(host="localhost",port=8188):
     }
     return SERVERS["SD"]["pid"]
 
-def generate_prompt(positive,negative="",width=512,height=512,seed=-1,randomize=False,
+def generate_prompt(positive="",negative="",orientation="square",seed=-1,randomize=False,
                     positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
-                    positive_suffix="",negative_suffix="(embedding:bad_pictures:.8)",
-                    checkpoint="sayano-anime.safetensors",scale=1.5,
+                    positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",
+                    style="anime",checkpoint=None,scale=1.5,
                     **kwargs):
     # Get a compiler
     from pybars import Compiler
@@ -52,13 +54,24 @@ def generate_prompt(positive,negative="",width=512,height=512,seed=-1,randomize=
     sampler = dict(DEFAULT_SAMPLER)
     sampler.update(kwargs)
 
+    if orientation=="portrait":
+        width,height=512,768
+    elif orientation=="landscape":
+        width,height=768,512
+    else:
+        width,height=512,512
+
+    if checkpoint is None:
+        if style=="realistic": checkpoint="sayano-realistic.safetensors"
+        else: checkpoint="sayano-anime.safetensors"
+
     output = template(dict(
         width=width,
         height=height,
         checkpoint=checkpoint,
         scale=scale,
-        positive=", ".join(json.dumps(i) for i in [positive_prefix,positive,positive_suffix] if len(i)),
-        negative=", ".join(json.dumps(i) for i in [negative_prefix,negative,negative_suffix] if len(i)),
+        positive=", ".join(str(i) for i in [positive_prefix,positive,positive_suffix] if i and len(i)),
+        negative=", ".join(str(i) for i in [negative_prefix,negative,negative_suffix] if i and len(i)),
         sampler=dict(
             seed=random.randint(0,MAX_INT32) if seed<0 or randomize else seed,
             **sampler

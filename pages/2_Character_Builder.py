@@ -108,19 +108,10 @@ def render_character_form(state):
     if not state.selected_character: st.markdown("*Please create a character below if it doesn't exist!*")
     elif st.button("Load Character Info",disabled=not state.selected_character): state=load_character(state)
         
-    with st.form("character"):
-        template_tab, voice_tab = st.tabs(["Template","Voice"])
-        with voice_tab:
-            state = render_tts_options_form(state)
-        with template_tab:
-            state = render_assistant_template_form(state)
-        if st.form_submit_button("Save",type="primary"):
-            state = save_character(state)
-
-    with st.expander("Customize your appearance",expanded=True):
+    with st.expander("Customize your appearance",expanded=state.preview is None):
         if type(state.assistant_template.appearance)==str:
             default_state = initial_image_generation_state()
-            default_state["positive"] = state.assistant_template.appearance
+            default_state["positive_suffix"] = state.assistant_template.appearance
             state.assistant_template.appearance = default_state
         
         state.assistant_template.appearance = image_generation_form(ObjectNamespace(**state.assistant_template.appearance))
@@ -130,6 +121,17 @@ def render_character_form(state):
             prompt = generate_prompt(**state.assistant_template.appearance)
             state.preview = generate_images(prompt=prompt)
             st.experimental_rerun()
+
+    if state.preview: st.image(state.preview)
+
+    with st.form("character"):
+        template_tab, voice_tab = st.tabs(["Template","Voice"])
+        with voice_tab:
+            state = render_tts_options_form(state)
+        with template_tab:
+            state = render_assistant_template_form(state)
+        if st.form_submit_button("Save",type="primary"):
+            state = save_character(state)
     
     return state
 
@@ -147,4 +149,3 @@ if __name__=="__main__":
                                             index=get_index(state.characters,state.selected_character),
                                             format_func=lambda x: os.path.basename(x))
         state = render_character_form(state)
-        if state.preview: st.image(state.preview)
