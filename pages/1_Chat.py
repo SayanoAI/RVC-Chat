@@ -168,7 +168,6 @@ if __name__=="__main__":
                         with st.spinner("generating image"):
                             images = generate_images(image_prompt)
                             st.image(images)
-                            full_response += f"\n\n**{function_name}({args})**"
 
                 if state.character.has_voice:
                     audio = state.character.text_to_speech(full_response)

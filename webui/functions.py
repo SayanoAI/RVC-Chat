@@ -2,31 +2,41 @@ from functools import lru_cache
 import json
 import os
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from webui.chat import Character
+    from webui.vector_db import VectorDB
 from webui.downloader import BASE_MODELS_DIR
 from webui.image_generation import generate_prompt
 from webui import ObjectNamespace
 
 FUNCTION_LIST = [
     ObjectNamespace(
-        description = "can you draw an [object]?|show me what you look like|send me a picture of [object]|draw an [object] for me|please redraw the image [with/without these conditions]|POSITIVE: [string of words to include in the image]\n\nNEGATIVE: [string of words to remove from the image]",
+        documents = "can you draw an [object]?|show me what you look like|send me a picture of [object]|draw an [object] for me|please redraw the image [with/without these conditions]|SUBJECT: [words to describe the main image subject]\n\nDESCRIPTION: [words to describe the main subject's appearance]\n\nENVIRONMENT: [words to describe the environment or items in it]\n\nNEGATIVE: [words to describe things to remove from the image]",
         function = "generate_prompt",
-        arguments = ["positive","positive_suffix","negative","orientation","seed","steps","cfg","randomize","checkpoint"],
-        positive = "string containing everything the user wants to include in the image (e.g. animals, accessories, actions, etc.)",
-        positive_suffix = "string containing the subject's physical appearance (e.g. hair color, eye color, clothes, etc.)",
+        arguments = ["subject","description","environment","negative","orientation","seed","steps","cfg","randomize","scale","style"],
+        subject = "string containing main subject of the image (e.g. a playful cat, a beautiful woman, an old man, etc.)",
+        description = "string describing the subject's physical appearance (e.g. hair color, eye color, clothes, etc.)",
+        environment = "string describing everything else you want to include in the image (e.g. animals, environment, background, etc.)",
         negative = "string containing anything the user wants to fix or remove from the drawing (e.g. extra fingers, missing limbs, errors, etc.)",
         orientation = "string describing the orientation of the image [square,portrait,landscape]",
         seed = "number to initialize the image with",
         steps = "number of steps to sample (20-40)",
         cfg = "number to show how closely to follow the prompt (7.0-12.0)",
         randomize="boolean to randomize the seed based on what the user wants (create new drawing=true, modify existing drawing=false)",
-        checkpoint="string for the default checkpoint",
+        scale="number to scale the image by (1.0-2.0)",
+        style="string to show the style of the image (anime|realistic)",
         STOP="boolean to stop the function call (set to 'True' if the assistant is unhappy)"
     ),
+    ObjectNamespace(
+        documents = "can you please clear the chat?",
+        function = "clear_chat",
+        arguments = []
+    )
 ]
 FUNCTION_MAP = ObjectNamespace(
-    generate_prompt=generate_prompt
+    generate_prompt=generate_prompt,
+    
 )
 
 def get_function(char, query: str, threshold=1.,verbose=False):
@@ -101,12 +111,12 @@ def call_function(character, prompt: str, context: str, threshold=1., retries=3,
 
     return None
 
-def load_functions(vdb):
+def load_functions(vdb: "VectorDB"):
     for data in FUNCTION_LIST:
         print(f"{data=}")
-        descriptions = data["description"].split("|")
+        descriptions = data["documents"].split("|")
         for description in descriptions:
             args = dict(data)
-            args.update(description=description)
+            args.update(documents=description)
             print(f"{description=}\n")
             vdb.add_function(**args)

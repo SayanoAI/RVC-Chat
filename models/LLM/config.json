@@ -334,7 +334,7 @@
     "config": {
       "prompt_template": "<|im_start|>system\n{instruction}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
       "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
-      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nAlways follow the following format:\n\"Always write {char}'s dialog in double quotes\"\n*Always write narration in italics*\n[{user}'s action is shown as square brackets]\n**{user}'s special instructions for {char} are always bolded**",
       "mapper": {
         "CHARACTER": "assistant",
         "USER": "user"
@@ -342,7 +342,71 @@
       "stop_words": "<|im_end|>,<|im_start|>"
     },
     "options": {
-      "top_k": 42,
+      "top_k": 50,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 1.0,
+      "presence_penalty": 1.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 1024,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
+    }
+  },
+  "b18c8fa81eff0759242d75f60d54d572": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\zephyr-7b-alpha.Q4_K_M.gguf",
+      "n_ctx": 8192,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "<|system|>\n{instruction}</s>\n{context}\n<|user|>\n{prompt}</s>\n<|assistant|>\n",
+      "chat_template": "<|{role}|>\n{content}</s>",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nAlways follow the following format:\n\"Always write {char}'s dialog in double quotes\"\n*Always write narration in italics*\n[{user}'s action is shown as square brackets]\n**{user}'s special instructions for {char} are always bolded**\n",
+      "mapper": {
+        "CHARACTER": "assistant",
+        "USER": "user"
+      },
+      "stop_words": "<|system|>,</s>,<|user|>,<|assistant|>"
+    },
+    "options": {
+      "top_k": 50,
+      "repeat_penalty": 1.1,
+      "frequency_penalty": 1.0,
+      "presence_penalty": 1.0,
+      "mirostat_mode": 2,
+      "mirostat_tau": 4.0,
+      "mirostat_eta": 0.2,
+      "max_tokens": 1024,
+      "temperature": 0.8,
+      "top_p": 0.95,
+      "tfs_z": 1.0,
+      "suffix": null
+    }
+  },
+  "81a62ebd9d6c28aa09579d2bc9e61a41": {
+    "version": 2,
+    "params": {
+      "fname": "models\\LLM\\Synatra-7B-v0.3-RP.gguf",
+      "n_ctx": 8192,
+      "n_gpu_layers": 64
+    },
+    "config": {
+      "prompt_template": "<|im_start|>system\n{instruction}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
+      "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nAlways follow the following format:\n\"Always write {char}'s dialog in double quotes\"\n*Always write narration in italics*\n[{user}'s action is shown as square brackets]\n**{user}'s special instructions for {char} are always bolded**",
+      "mapper": {
+        "CHARACTER": "assistant",
+        "USER": "user"
+      },
+      "stop_words": "<|im_end|>,<|im_start|>"
+    },
+    "options": {
+      "top_k": 50,
       "repeat_penalty": 1.1,
       "frequency_penalty": 1.0,
       "presence_penalty": 1.0,

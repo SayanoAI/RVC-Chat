@@ -27,16 +27,18 @@
     "greeting": "Hey {user}, I've been waiting for you.",
     "name": "Mae",
     "appearance": {
-      "positive": "studio lighting, studio, detailed background",
+      "subject": "a caucasian youtuber",
+      "description": "very long silver hair, (red eyes:1.3), delicate face, gentle expression",
+      "environment": "studio lighting, studio, detailed background",
       "negative": "(nude, nsfw:1.2), bad anatomy, twisted, mutated fingers",
       "seed": 777115644,
+      "orientation": "portrait",
       "steps": 20,
       "cfg": 7.5,
+      "scale": 1.0,
       "name": "dpmpp_2m",
       "randomize": false,
-      "checkpoint": "sayano-realistic.safetensors",
-      "positive_suffix": "caucasian woman with very long silver hair and (red eyes:1.3), delicate face, gentle expression",
-      "orientation": "landscape"
+      "style": "realistic"
     },
     "scenario": "{user} is invited to Mae's home for an exclusive roleplaying session."
   },

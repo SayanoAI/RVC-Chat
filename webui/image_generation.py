@@ -36,17 +36,18 @@ def start_server(host="localhost",port=8188):
     }
     return SERVERS["SD"]["pid"]
 
-def generate_prompt(positive="",negative="",orientation="square",seed=-1,randomize=False,
+def generate_prompt(positive="",subject="",description="",environment="",negative="",orientation="square",seed=-1,randomize=False,
                     positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
                     positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",
-                    style="anime",checkpoint=None,scale=1.5,
+                    style="anime",checkpoint=None,scale=1.,
                     **kwargs):
     # Get a compiler
     from pybars import Compiler
     compiler = Compiler()
 
     # Compile the template
-    with open(os.path.join(CWD,"models","SD",".workflows","txt2img.txt"),"r") as f:
+    workflow = "txt2img-upscale.txt" if scale>1 else "txt2img.txt"
+    with open(os.path.join(CWD,"models","SD",".workflows",workflow),"r") as f:
         source = f.read()
     template = compiler.compile(source)
 
@@ -61,7 +62,7 @@ def generate_prompt(positive="",negative="",orientation="square",seed=-1,randomi
     else:
         width,height=512,512
 
-    if checkpoint is None:
+    if not checkpoint:
         if style=="realistic": checkpoint="sayano-realistic.safetensors"
         else: checkpoint="sayano-anime.safetensors"
 
@@ -70,7 +71,7 @@ def generate_prompt(positive="",negative="",orientation="square",seed=-1,randomi
         height=height,
         checkpoint=checkpoint,
         scale=scale,
-        positive=", ".join(str(i) for i in [positive_prefix,positive,positive_suffix] if i and len(i)),
+        positive=", ".join(str(i) for i in [positive_prefix,positive,subject,description,environment,positive_suffix,f"{style} style"] if i and len(i)),
         negative=", ".join(str(i) for i in [negative_prefix,negative,negative_suffix] if i and len(i)),
         sampler=dict(
             seed=random.randint(0,MAX_INT32) if seed<0 or randomize else seed,

@@ -111,7 +111,7 @@ def render_character_form(state):
     with st.expander("Customize your appearance",expanded=state.preview is None):
         if type(state.assistant_template.appearance)==str:
             default_state = initial_image_generation_state()
-            default_state["positive_suffix"] = state.assistant_template.appearance
+            default_state["description"] = state.assistant_template.appearance
             state.assistant_template.appearance = default_state
         
         state.assistant_template.appearance = image_generation_form(ObjectNamespace(**state.assistant_template.appearance))

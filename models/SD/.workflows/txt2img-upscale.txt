@@ -70,10 +70,48 @@
     },
     "class_type": "CLIPSetLastLayer"
   },
+  "13": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "scale_by": {{scale}},
+      "samples": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "LatentUpscaleBy"
+  },
+  "14": {
+    "inputs": {
+      "seed": {{sampler.seed}},
+      "steps": {{sampler.steps}},
+      "cfg": {{sampler.cfg}},
+      "sampler_name": "{{sampler.name}}",
+      "scheduler": "karras",
+      "denoise": 0.5,
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
   "15": {
     "inputs": {
       "samples": [
-        "3",
+        "14",
         0
       ],
       "vae": [

@@ -10,7 +10,7 @@ import urllib.request
 from webui import PITCH_EXTRACTION_OPTIONS, get_cwd, i18n
 from webui.contexts import ProgressBarContext
 from webui.downloader import save_file, save_file_generator
-from webui.image_generation import MAX_INT32, ORIENTATION_OPTIONS, SAMPLER_OPTIONS
+from webui.image_generation import MAX_INT32, ORIENTATION_OPTIONS, SAMPLER_OPTIONS, STYLE_OPTIONS
 from webui.utils import gc_collect, get_filenames, get_index, get_subprocesses
 
 CWD = get_cwd()
@@ -238,37 +238,54 @@ def st_iframe(url: str, width=None, height=None, scrolling=False):
 @st.cache_data
 def initial_image_generation_state():
     return ObjectNamespace(
+        subject="",
         positive="",
         positive_suffix="",
+        description="",
+        environment="",
         negative="",
         seed=-1,
         orientation="square",
         steps=20,
         cfg=7.5,
+        scale=1.0,
         name="dpmpp_2m",
         randomize=True,
-        checkpoint="sayano-anime.safetensors"
+        checkpoint=None,
+        style="anime"
     )
 
-def get_sd_model_name(): return [os.path.basename(fname) for fname in get_filenames("./models","SD",["safetensors","ckpt"])]
+def get_sd_model_name(): return [""]+[os.path.basename(fname) for fname in get_filenames("./models","SD",["safetensors","ckpt"])]
 
-def image_generation_form(state=initial_image_generation_state()):
+def image_generation_form(init_state=initial_image_generation_state()):
+    state = initial_image_generation_state()
+    state.update(init_state)
     # Create a text input for the user to enter a prompt
     st.write("Positive Prompts")
-    state.positive = st.text_area("Everything you want to include in the image (e.g. animals, accessories, actions, etc.)",value=state.positive)
-    state.positive_suffix = st.text_area("Physical appearance (e.g. hair color, eye color, clothes, etc.)",value=state.positive_suffix)
+    # state.positive = st.text_area("positive",value=state.positive)
+    # state.positive_suffix = st.text_area("positive_suffix",value=state.positive_suffix)
+    state.subject = st.text_area("The main subject of the image (e.g. a cat sitting on a mat, a woman standing, etc.)",value=state.subject)
+    state.description = st.text_area("Physical appearance of the subject (e.g. hair color, eye color, clothes, etc.)",value=state.description)
+    state.environment = st.text_area("Everything else you want to include in the image (e.g. animals, accessories, background, actions, etc.)",value=state.environment)
 
     st.write("Negative Prompts")
     state.negative = st.text_area("Everything to fix or remove from the drawing (e.g. extra fingers, missing limbs, errors, etc.)",value=state.negative)
     c1, c2, c3 = st.columns(3)
-    state.randomize = st.checkbox("Randomize Seed",value=state.randomize)
+    
 
     state.orientation = c1.radio("Orientation",horizontal=True,options=ORIENTATION_OPTIONS,index=get_index(ORIENTATION_OPTIONS,state.width))
+    state.name = c2.selectbox("Sampler Name",options=SAMPLER_OPTIONS,index=get_index(SAMPLER_OPTIONS,state.name))
+    state.steps = c3.number_input("Steps",min_value=1,max_value=100,step=1,value=state.steps)
+    
+    state.cfg = c1.number_input("CFG",min_value=0.,max_value=15.,step=.1,value=state.cfg)
+    state.randomize = c3.checkbox("Randomize Seed",value=state.randomize)
+    state.scale = c2.number_input("Upscale (1.0=disabled)",min_value=1.,max_value=2.,step=.1,value=state.scale)
     state.seed = c3.number_input("Seed",min_value=-1,max_value=MAX_INT32,step=1,value=state.seed,disabled=state.randomize)
-    state.steps = c1.number_input("Steps",min_value=1,max_value=100,step=1,value=state.steps)
-    state.cfg = c2.number_input("CFG",min_value=0.,max_value=15.,step=.1,value=state.cfg)
-    state.name = c3.selectbox("Sampler Name",options=SAMPLER_OPTIONS,index=get_index(SAMPLER_OPTIONS,state.name))
+    
+    
     MODEL_OPTIONS = get_sd_model_name()
-    state.checkpoint = st.selectbox("Checkpoint Name",options=MODEL_OPTIONS,index=get_index(MODEL_OPTIONS,state.checkpoint))
+    c1, c2 = st.columns(2)
+    state.style = c1.radio("Image Style",horizontal=True,options=STYLE_OPTIONS,index=get_index(STYLE_OPTIONS,state.style))
+    # state.checkpoint = c2.selectbox("Checkpoint Name",options=MODEL_OPTIONS,index=get_index(MODEL_OPTIONS,state.checkpoint))
 
     return state
