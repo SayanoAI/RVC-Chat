@@ -4,17 +4,25 @@ import random
 import subprocess
 from time import sleep
 from typing import Any, Iterator, List, Optional, Union
+import psutil
 import requests
 import asyncio
 from webui import SERVERS, get_cwd
-from webui.utils import pid_is_active
+from webui.utils import gc_collect, pid_is_active
 
 CWD = get_cwd()
 
 def start_server(model, host="localhost", port=8000, n_gpu_layers=0, n_ctx=2048):
     if pid_is_active(None if SERVERS["LLM"] is None else SERVERS["LLM"].get("pid")):
-        # change model later
-        return SERVERS["LLM"]["url"]
+        if model!=SERVERS["LLM"].get("model"): # change model
+            pid = SERVERS["LLM"].get("pid")
+            process = psutil.Process(pid)
+            if process.is_running():
+                process.kill()
+                gc_collect()
+                print(f"Switching models: process {pid} killed.")
+        else:
+            return SERVERS["LLM"]["url"]
     
     base_url = f"http://{host}:{port}/api"
     cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={n_gpu_layers} --contextsize={n_ctx} --skiplauncher --multiuser --usecublas --smartcontext"
@@ -26,7 +34,8 @@ def start_server(model, host="localhost", port=8000, n_gpu_layers=0, n_ctx=2048)
                 if req.status_code==200:
                     SERVERS["LLM"] = {
                         "url": base_url,
-                        "pid": process.pid
+                        "pid": process.pid,
+                        "model": model
                     }
                     break
         except Exception:
