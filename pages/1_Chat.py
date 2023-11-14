@@ -162,7 +162,7 @@ if __name__=="__main__":
                         full_response = response
                         message_placeholder.markdown(full_response)
 
-                    response = call_function(state.character,prompt=prompt,context=full_response,use_grammar=True,threshold=state.threshold,verbose=True) # calls function
+                    response = call_function(state.character,prompt=prompt,reply=full_response,use_grammar=True,threshold=state.threshold,verbose=True) # calls function
                     if response is not None:
                         function_name, args, image_prompt = response
                         with st.spinner("generating image"):

@@ -155,7 +155,7 @@ def load_model_data(model_file):
 # Define a Character class
 class Character:
     # Initialize the character with a name and a voice
-    def __init__(self, character_file, model_file, memory = 0, user="",stt_method="speecht5",device=None,**kwargs):
+    def __init__(self, character_file, model_file, memory = 10, threshold=1.5, user="",stt_method="speecht5",device=None,**kwargs):
         self.character_file = character_file
         self.model_file = model_file
         self.voice_model = None
@@ -185,7 +185,7 @@ class Character:
         self.context_index = 0
         self.memory = memory if memory else int(np.log(self.model_data["params"]["n_ctx"])*2.5)+1 # memory is log(context_window)*2.5 words/token
         self.max_memory = int(np.sqrt(self.model_data["params"]["n_ctx"]))+1
-        self.context = self.build_context("")
+        self.threshold = threshold
         
     def load_character(self,fname):
         self.character_data = load_character_data(fname)
@@ -296,6 +296,48 @@ class Character:
                 sd.play(*output_audio)
                 greeting_message["audio"] = output_audio
         return greeting_message
+    
+    @property
+    def persona(self):
+        assistant_template = self.character_data["assistant_template"]
+        return "\n".join(
+            f"{key.upper()}: {json.dumps(assistant_template[key]) if key=='appearance' else assistant_template[key].format(user=self.user,char=self.name)}"
+            for key in ["background","personality","appearance","scenario"]
+            if assistant_template[key]
+        )
+    
+    @property
+    def chat_history(self):
+        model_config = self.model_data["config"]
+        return "\n".join([
+            model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
+            for ex in self.messages[self.context_index:]
+        ])
+        
+    @property
+    def examples(self):
+        model_config = self.model_data["config"]
+        assistant_template = self.character_data["assistant_template"]
+        return "\n".join([
+            model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
+            for ex in assistant_template["examples"]
+        ])
+    
+    @property
+    def context(self):
+        return "\n\n".join([f"PERSONA\n{self.persona}",f"EXAMPLES\n{self.examples}",self.chat_history])
+    
+    
+    def get_relevant_history(self,prompt):
+        model_config = self.model_data["config"]
+        history = self.ltm.get_query(prompt,n_results=self.memory,threshold=self.threshold)
+        if len(history): print(history)
+
+        return "\n".join([
+            model_config["chat_template"].format(role=self.chat_mapper(ex["metadata"]["role"]),content=ex["metadata"]["content"])
+            for ex in history
+        ])
+            
 
     def save_history(self, save_dir = None, format="wav"):
         if not save_dir: save_dir = self.save_dir
@@ -392,7 +434,6 @@ class Character:
             self.messages = messages
             # summarize messages after load
             self.context_index = 0
-            self.context = self.build_context("")
             
             return f"Chat successfully loaded from {save_dir}!"
         except Exception as e:
@@ -404,9 +445,9 @@ class Character:
 
         model_config = self.model_data["config"]
         # Send the input text to llamacpp model as a prompt
-        self.context = self.build_context(input_text)
+        prompt = self.build_prompt(input_text)
         generator = self.LLM.create_completion(
-            self.context,stream=True,stop=["USER","CHARACTER"]+model_config["stop_words"].split(","),
+            prompt,stream=True,stop=["USER","CHARACTER"]+model_config["stop_words"].split(","),
             **self.model_data["options"])
         
         for completion_chunk in generator:
@@ -420,9 +461,8 @@ class Character:
         elif role==assistant_template["name"]: return model_config["mapper"]["CHARACTER"]
         else: return role
 
-    def build_context(self,prompt: str):
+    def build_prompt(self,prompt: str):
         model_config = self.model_data["config"]
-        assistant_template = self.character_data["assistant_template"]
 
         # clear chat history if memory maxed
         if len(self.messages[self.context_index:])>self.max_memory:
@@ -437,39 +477,18 @@ class Character:
             self.context_summary = self.summarize_context() #summarizes the past
         
         # Concatenate chat history and system template
-        history = self.ltm.get_query(prompt,n_results=self.memory)
-        if len(history): print(history)
-
-        messages = "\n".join([
-            model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
-            for ex in self.messages[self.context_index:]
-        ])
-        history = "\n".join([
-            model_config["chat_template"].format(role=self.chat_mapper(ex["metadata"]["role"]),content=ex["metadata"]["content"])
-            for ex in history
-        ])
-        examples = "\n".join([
-            model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
-            for ex in assistant_template["examples"]
-        ])
-            
-        persona = "\n".join(
-            f"{key.upper()}: {json.dumps(assistant_template[key]) if key=='appearance' else assistant_template[key]}"
-            for key in ["background","personality","appearance","scenario"]
-            if assistant_template[key]
-        )
-
-        context = "\n\n".join([f"PERSONA\n{persona}",f"EXAMPLES\n{examples}",f"HISTORY\n{history}",messages])
+        info = self.get_relevant_history(prompt)
+        context = "\n\n".join([f"RELEVANT INFO\n{info}",self.context])
 
         instruction = model_config["instruction"].format(
-            char=assistant_template["name"],
+            char=self.name,
             user=self.user
         )
         
         chat_history_with_template = model_config["prompt_template"].format(
             context=context,
             instruction=instruction,
-            char=assistant_template["name"],
+            char=self.name,
             user=self.user,
             prompt=prompt
             )

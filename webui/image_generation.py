@@ -36,10 +36,10 @@ def start_server(host="localhost",port=8188):
     }
     return SERVERS["SD"]["pid"]
 
-def generate_prompt(positive="",subject="",description="",environment="",negative="",orientation="square",seed=-1,randomize=False,
+def generate_prompt(positive="",subject="",description="",environment="",emotion="",negative="",orientation="square",seed=-1,randomize=False,
                     positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
                     positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",
-                    style="anime",checkpoint=None,scale=1.,
+                    style="anime",checkpoint=None,scale=1.,steps=20, cfg=7, name="dpmpp_2m",
                     **kwargs):
     # Get a compiler
     from pybars import Compiler
@@ -51,27 +51,37 @@ def generate_prompt(positive="",subject="",description="",environment="",negativ
         source = f.read()
     template = compiler.compile(source)
 
-    # Render the template
-    sampler = dict(DEFAULT_SAMPLER)
-    sampler.update(kwargs)
-
-    if orientation=="portrait":
+    if orientation.lower()=="portrait":
         width,height=512,768
-    elif orientation=="landscape":
+    elif orientation.lower()=="landscape":
         width,height=768,512
     else:
         width,height=512,512
 
     if not checkpoint:
-        if style=="realistic": checkpoint="sayano-realistic.safetensors"
+        if style.lower()=="realistic": checkpoint="sayano-realistic.safetensors"
         else: checkpoint="sayano-anime.safetensors"
+
+    if scale>2: scale=2.0
+    elif scale<1: scale=1.0
+
+    if cfg>12: cfg=12.0
+    elif cfg<1: cfg=1.0
+
+    if steps>50: steps=50
+    elif steps<20: steps=20
+
+    # Render the template
+    sampler = dict(DEFAULT_SAMPLER)
+    sampler.update(steps=steps, cfg=cfg, name=name)
 
     output = template(dict(
         width=width,
         height=height,
         checkpoint=checkpoint,
         scale=scale,
-        positive=", ".join(str(i) for i in [positive_prefix,positive,subject,description,environment,positive_suffix,f"{style} style"] if i and len(i)),
+        positive=", ".join(str(i) for i in [
+            positive_prefix,positive,subject,description,emotion,environment,style,positive_suffix] if i and len(i)),
         negative=", ".join(str(i) for i in [negative_prefix,negative,negative_suffix] if i and len(i)),
         sampler=dict(
             seed=random.randint(0,MAX_INT32) if seed<0 or randomize else seed,

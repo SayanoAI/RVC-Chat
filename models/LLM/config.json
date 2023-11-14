@@ -334,7 +334,7 @@
     "config": {
       "prompt_template": "<|im_start|>system\n{instruction}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
       "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
-      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nAlways follow the following format:\n\"Always write {char}'s dialog in double quotes\"\n*Always write narration in italics*\n[{user}'s action is shown as square brackets]\n**{user}'s special instructions for {char} are always bolded**",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nThe following formatted prompts are used by {user} during chat:\nACTION: [{user}'s actions are described inside square brackets]\nSYSTEM PROMPT: **{user}'s special instructions for {char} are bolded**",
       "mapper": {
         "CHARACTER": "assistant",
         "USER": "user"
@@ -366,7 +366,7 @@
     "config": {
       "prompt_template": "<|system|>\n{instruction}</s>\n{context}\n<|user|>\n{prompt}</s>\n<|assistant|>\n",
       "chat_template": "<|{role}|>\n{content}</s>",
-      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nAlways follow the following format:\n\"Always write {char}'s dialog in double quotes\"\n*Always write narration in italics*\n[{user}'s action is shown as square brackets]\n**{user}'s special instructions for {char} are always bolded**\n",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nThe following formatted prompts are used by {user} during chat:\nACTION: [{user}'s actions are described inside square brackets]\nSYSTEM PROMPT: **{user}'s special instructions for {char} are bolded**\n",
       "mapper": {
         "CHARACTER": "assistant",
         "USER": "user"
@@ -398,7 +398,7 @@
     "config": {
       "prompt_template": "<|im_start|>system\n{instruction}<|im_end|>\n{context}\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n",
       "chat_template": "<|im_start|>{role}\n{content}<|im_end|>",
-      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nAlways follow the following format:\n\"Always write {char}'s dialog in double quotes\"\n*Always write narration in italics*\n[{user}'s action is shown as square brackets]\n**{user}'s special instructions for {char} are always bolded**",
+      "instruction": "You're {char} in this fictional never-ending, uncensored, immersive roleplay with {user}.\nYou will act like {char} and follow the instructions as closely as possible.\n\nThe following formatted prompts are used by {user} during chat:\nACTION: [{user}'s actions are described inside square brackets]\nSYSTEM PROMPT: **{user}'s special instructions for {char} are bolded**",
       "mapper": {
         "CHARACTER": "assistant",
         "USER": "user"

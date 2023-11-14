@@ -239,8 +239,6 @@ def st_iframe(url: str, width=None, height=None, scrolling=False):
 def initial_image_generation_state():
     return ObjectNamespace(
         subject="",
-        positive="",
-        positive_suffix="",
         description="",
         environment="",
         negative="",
@@ -251,7 +249,6 @@ def initial_image_generation_state():
         scale=1.0,
         name="dpmpp_2m",
         randomize=True,
-        checkpoint=None,
         style="anime"
     )
 

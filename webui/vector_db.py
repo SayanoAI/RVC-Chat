@@ -49,12 +49,13 @@ class VectorDB:
             self.collection, self.key = get_collection_and_key(self.name)
             load_functions(self)
 
-    def add_function(self,documents,function,arguments,type="function",**args):
+    def add_function(self,documents,function,arguments,instructions="",type="function",**args):
         self.collection.add(ids=[str(uuid4())],documents=documents,metadatas={
             "hnsw:space": "cosine",
             "type": type,
             "function": function,
             "arguments": json.dumps(arguments),
+            "instructions": instructions,
             "template": json.dumps(args)
             })
 
