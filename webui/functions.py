@@ -56,7 +56,7 @@ def get_args(char: "Character", instructions: str, prompt: str, use_grammar=Fals
     try:
         prompt_template = char.model_data["config"]["prompt_template"].format(
             instruction=instructions,
-            context=char.context,
+            context=char.summarize_context(),
             prompt=prompt
         )
         
@@ -100,7 +100,7 @@ def call_function(character, prompt: str, reply: str, threshold=1., retries=3, u
                         is_stopped = args.get("STOP",False)
                         if is_stopped and int(is_stopped):
                             print("character refused to execute function")
-                            return False
+                            return None
                         else:
                             args = {k:args[k] for k in args if k in metadata['arguments']}
                             return metadata['function'], args, FUNCTION_MAP[metadata["function"]](**args)

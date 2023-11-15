@@ -1,5 +1,6 @@
 
 
+import io
 import json
 import os
 import random
@@ -7,6 +8,7 @@ import subprocess
 import time
 import numpy as np
 import requests
+from PIL import Image
 
 from webui import SERVERS, get_cwd
 from webui.utils import pid_is_active
@@ -114,8 +116,8 @@ def generate_images(prompt: dict, url = None, timeout=60):
             
             for image in images:
                 with requests.get(f"{url}/view",stream=True,params=image,headers=HEADERS) as req:
-                    if req.status_code==200:
-                        output.append(req.content)
+                    if req.status_code==200 and req.content:
+                        output.append(Image.open(io.BytesIO(req.content)))
 
     except Exception as e:
         print(e)

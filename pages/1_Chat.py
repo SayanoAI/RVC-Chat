@@ -1,12 +1,13 @@
 import os
+import numpy as np
 import streamlit as st
 from webui import MENU_ITEMS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
-from webui.chat import Character
 from webui.downloader import OUTPUT_DIR
 from webui.functions import call_function
 from webui.image_generation import generate_images
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
+from webui.chat import Character
 from webui.components import file_uploader_form
 import sounddevice as sd
 from webui.contexts import SessionStateContext
@@ -129,13 +130,17 @@ if __name__=="__main__":
                 with st.chat_message(msg["role"]):
                     st.write(msg["content"])
                     col1, col2 = st.columns(2)
-                    if msg.get("audio"):
+                    if "audio" in msg:
                         if col1.button("Play",key=f"Play{i}"): sd.play(*msg["audio"])
                     if col2.button("Delete",key=f"Delete{i}"):
                         st.toast(f"Deleted message: {state.character.messages.pop(i)}")
                         st.experimental_rerun()
-                    if msg.get("image"):
-                        st.image(msg.get("image"))
+                    if "image" in msg:
+                        # for i in msg.get("image"):
+                        #     img = np.frombuffer(i)
+                        #     st.write(img)
+                        img = msg.get("image")
+                        if img: st.image(img)
 
             action_placeholder = st.empty()
             prompt=st.chat_input(disabled=chat_disabled or state.character.autoplay)
@@ -145,9 +150,13 @@ if __name__=="__main__":
                 st.write(state.character.summarize_context())
             if c2.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
                 state.character.toggle_autoplay()
+                st.experimental_rerun()
             if c3.button("Regenerate"):
                 state.character.messages.pop()
                 prompt = state.character.messages.pop()["content"]
+            if c4.button("Clear Chat",key="clear-chat-2",type="primary"):
+                state.character.clear_chat()
+                st.experimental_rerun()
             
             if state.character.autoplay or prompt:
                 state.character.is_recording=False
@@ -158,7 +167,7 @@ if __name__=="__main__":
                 images = None
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
-                    for response in state.character.generate_text("Continue the story without me" if state.character.autoplay else prompt):
+                    for response in state.character.generate_text("**Please continue the story without {{user}}'s input**" if state.character.autoplay else prompt):
                         full_response = response
                         message_placeholder.markdown(full_response)
 

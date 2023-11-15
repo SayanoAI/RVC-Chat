@@ -3,14 +3,12 @@ import os
 import random
 import streamlit as st
 from webui import MENU_ITEMS, TTS_MODELS, ObjectNamespace, get_cwd, i18n
-from webui.chat import init_assistant_template, init_tts_options, load_character_data
 from webui.image_generation import MAX_INT32, generate_images, generate_prompt
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
+from webui.chat import init_assistant_template, init_tts_options, load_character_data
 from webui.components import image_generation_form, initial_image_generation_state, voice_conversion_form
-
 from webui.contexts import SessionStateContext
-
 from webui.utils import get_filenames, get_index
 
 CWD = get_cwd()
