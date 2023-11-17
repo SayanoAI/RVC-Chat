@@ -3,9 +3,9 @@ import random
 from time import sleep
 import numpy as np
 import streamlit as st
-
+from PIL import Image
 from webui import MENU_ITEMS, SERVERS, ObjectNamespace, get_cwd
-from webui.image_generation import generate_images, start_server, generate_prompt
+from webui.image_generation import describe_image, generate_images, start_server, generate_prompt
 from webui.utils import pid_is_active
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
@@ -47,5 +47,14 @@ if __name__=="__main__":
             
             if state.images:
                 st.image(state.images)
+
+            # with st.form("describe_image", clear_on_submit=True):
+            img_file = st.file_uploader("Upload Image for Interrogation",type=["png","jpg","jpeg"])
+            if img_file: st.image(img_file)
+            
+            if st.button("Describe Image",disabled=not bool(img_file)):
+                state.tags = describe_image(img_file.read())
+
+            st.write(state.tags)
 
         active_subprocess_list()

@@ -1,10 +1,10 @@
 import os
-import numpy as np
+from PIL import Image
 import streamlit as st
 from webui import MENU_ITEMS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
 from webui.downloader import OUTPUT_DIR
 from webui.functions import call_function
-from webui.image_generation import generate_images
+from webui.image_generation import describe_image, generate_images
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.chat import Character
@@ -145,7 +145,7 @@ if __name__=="__main__":
             action_placeholder = st.empty()
             prompt=st.chat_input(disabled=chat_disabled or state.character.autoplay)
 
-            c1,c2,c3,c4 = action_placeholder.columns(4)
+            c1,c2,c3,c4,c5 = action_placeholder.columns(5)
             if c1.button("Summarize Context"):
                 st.write(state.character.summarize_context())
             if c2.button("Toggle Autoplay",type="primary" if state.character.autoplay else "secondary" ):
@@ -157,17 +157,28 @@ if __name__=="__main__":
             if c4.button("Clear Chat",key="clear-chat-2",type="primary"):
                 state.character.clear_chat()
                 st.experimental_rerun()
+            img_file = st.file_uploader("Upload Image",type=["png","jpg","jpeg"])
+            image = tags = None
+            if img_file and not img_file.closed:
+                image = Image.open(img_file)
+                st.image(img_file)
             
             if state.character.autoplay or prompt:
                 state.character.is_recording=False
                 if not state.character.autoplay:
                     st.chat_message(state.character.user).write(prompt)
+                    if image:
+                        tags = describe_image(img_file.read())
+                        print(tags)
                 
                 full_response = ""
                 images = None
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
-                    for response in state.character.generate_text("**Please continue the story without {{user}}'s input**" if state.character.autoplay else prompt):
+                    if state.character.autoplay: augmented_prompt = "**Please continue the story without {{user}}'s input**" 
+                    else: augmented_prompt = f"{prompt}\nImage description: {tags}" if tags else prompt
+                    print(augmented_prompt)
+                    for response in state.character.generate_text(augmented_prompt):
                         full_response = response
                         message_placeholder.markdown(full_response)
 
@@ -187,8 +198,9 @@ if __name__=="__main__":
                     audio = None
             
                 if not state.character.autoplay:
-                    state.character.messages.append({"role": state.character.user, "content": prompt}) #add user prompt to history
+                    state.character.messages.append({"role": state.character.user, "content": prompt, "image": image}) #add user prompt to history
                     prompt = ""
+                    image = None
                 
                 state.character.messages.append({
                     "role": state.character.name,

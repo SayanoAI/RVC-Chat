@@ -30,11 +30,6 @@ FUNCTION_LIST = [
         STOP="boolean to stop the function call (set to 'True' if the assistant is unhappy)",
         instructions="Construct a JSON object with the following fields: {template}. Use the content below to build the JSON object.\n\n{context}"
     ),
-    ObjectNamespace(
-        documents = "can you please clear the chat?",
-        function = "clear_chat",
-        arguments = []
-    )
 ]
 FUNCTION_MAP = ObjectNamespace(
     generate_prompt=generate_prompt,

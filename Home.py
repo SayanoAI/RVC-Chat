@@ -2,6 +2,7 @@
 import os
 import platform
 import shutil
+from types import FunctionType
 import streamlit as st
 from webui import MENU_ITEMS, get_cwd
 st.set_page_config("RVC Chat",layout="centered",menu_items=MENU_ITEMS)
@@ -23,19 +24,28 @@ def render_download_lib(lib_name: str):
         file_downloader((lib_name,link))
         st.experimental_rerun()
 
-def render_install_git(dir: str):
+def render_install_git(call_back: FunctionType=None):
     col1, col2 = st.columns(2)
-    for url in GIT_REPOS:
+    for url,location in GIT_REPOS:
         lib_name = os.path.basename(url)
-        location = os.path.join(dir, lib_name)
         is_downloaded = os.path.exists(location)
         col1.checkbox(lib_name,value=is_downloaded,disabled=True)
         if col2.button("Install",disabled=is_downloaded,key=lib_name):
             git_install(url, location)
-            comfyui_dir = os.path.join(BASE_CACHE_DIR,"ComfyUI")
-            if os.path.exists(comfyui_dir):
-                shutil.copy("extra_model_paths.yaml",comfyui_dir)
+            if call_back: call_back(lib_name, location)
             st.experimental_rerun()
+
+def after_git(lib_name, location):
+    if "ComfyUI" in lib_name:
+        if os.path.exists(location):
+            shutil.copy("extra_model_paths.yaml",location) # copy configs
+            # install image tagger
+            url = "https://github.com/pythongosssss/ComfyUI-WD14-Tagger"
+            dir = os.path.join(location,"custom_nodes","ComfyUI-WD14-Tagger")
+            git_install(url, dir)
+            wd14_tagger_model = os.path.join(dir,"models","wd-v1-4-convnextv2-tagger-v2.onnx")
+            if not os.path.isfile(wd14_tagger_model):
+                file_downloader((wd14_tagger_model,"https://huggingface.co/SmilingWolf/wd-v1-4-convnextv2-tagger-v2/resolve/main/model.onnx"))
 
 def render_model_checkboxes(generator):
     not_downloaded = []
@@ -71,9 +81,9 @@ if __name__=="__main__":
         if platform.system() == "Windows":
             render_download_lib("ffmpeg.exe")
             render_download_lib("koboldcpp.exe")
-            render_install_git(BASE_CACHE_DIR)
         elif platform.system() == "Linux":
             st.markdown("run `apt update && apt install -y -qq ffmpeg espeak` in your terminal")
+        render_install_git(after_git)
 
     st.subheader("Required Models for inference")
     with st.expander("Voice Models"):

@@ -1,11 +1,13 @@
 
 
+import hashlib
 import io
 import json
 import os
 import random
 import subprocess
 import time
+from typing import Tuple
 import numpy as np
 import requests
 from PIL import Image
@@ -92,10 +94,8 @@ def generate_prompt(positive="",subject="",description="",environment="",emotion
     ))
     return json.loads(output)
 
-def generate_images(prompt: dict, url = None, timeout=60):
-    if url is None: url = SERVERS["SD"]["url"]
+def poll_prompt(prompt: dict, url = None, timeout=60):
     prompt_id = None
-    images = output = []
 
     try:
         with requests.post(f"{url}/prompt",json={"prompt": prompt},headers=HEADERS) as req:
@@ -105,14 +105,75 @@ def generate_images(prompt: dict, url = None, timeout=60):
 
         if prompt_id is not None:
             for i in range(timeout):
-                print(f"polling for image data... {i+1}")
                 time.sleep(1)
+                print(f"polling for image data... {i+1}/{timeout}")
                 with requests.get(f"{url}/history/{prompt_id}",headers=HEADERS) as req:
                     if req.status_code==200:
                         result = req.json()
-                        if prompt_id in result:
-                            images = result[prompt_id]["outputs"]["19"]["images"]
-                            break
+                        if prompt_id in result: return result[prompt_id]
+    except Exception as e:
+        print(e)
+
+    return None
+
+def upload_image(image, url=None):
+    
+    filename = hashlib.md5(image).hexdigest()
+    files = {"image": (filename,image)}
+
+    # check if image exists
+    with requests.get(f"{url}/view",stream=True,params=dict(filename=filename,type="input"),headers=HEADERS) as req:
+        if req.status_code==200: return filename
+        else:
+            # upload image
+            with requests.post(f"{url}/upload/image",files=files) as req:
+                
+                if req.status_code==200:
+                    result = req.json()
+                    img_name = result.get("name")
+
+                    if img_name == filename: return filename
+                else: print(req.reason)
+    return None
+
+def describe_image(image: bytes, url = None, timeout=60):
+    if url is None: url = SERVERS["SD"]["url"]
+
+    # Get a compiler
+    from pybars import Compiler
+    compiler = Compiler()
+    workflow = "img2txt.txt"
+    img_name = tags = None
+
+    try:
+        img_name = upload_image(image, url)
+        
+        # Compile the template
+        if img_name:
+            with open(os.path.join(CWD,"models","SD",".workflows",workflow),"r") as f:
+                source = f.read()
+            template = compiler.compile(source)
+            prompt = template(dict(image=img_name))
+            prompt = json.loads(prompt)
+            print(prompt)
+            # call prompt
+            result = poll_prompt(prompt, url=url, timeout=timeout)
+            if result: tags = ", ".join(result["outputs"]["2"]["tags"]).replace("_"," ")
+    except Exception as e:
+        print(e)
+
+    return tags
+
+
+def generate_images(prompt: dict, url = None, timeout=60):
+    if url is None: url = SERVERS["SD"]["url"]
+    images = output = []
+
+    try:
+        result = poll_prompt(prompt, url=url, timeout=timeout)
+
+        if result:
+            images = result["outputs"]["19"]["images"]
             
             for image in images:
                 with requests.get(f"{url}/view",stream=True,params=image,headers=HEADERS) as req:

@@ -42,7 +42,7 @@ SD_MODELS = [
     "SD/sayano-realistic.safetensors"
 ]
 GIT_REPOS = [
-    "https://github.com/comfyanonymous/ComfyUI"
+    ("https://github.com/comfyanonymous/ComfyUI",os.path.join(BASE_CACHE_DIR,"ComfyUI"))
 ]
 STT_MODELS = [
     "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip"

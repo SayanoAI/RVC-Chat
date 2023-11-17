@@ -502,24 +502,10 @@ class Character:
         # Concatenate chat history and system template
         info = self.get_relevant_history(prompt)
         context = "\n\n".join([f"RELEVANT INFO\n{info}",self.context])
-
-        instruction = model_config["instruction"].format(
-            char=self.name,
-            user=self.user
-        )
-        
-        # chat_history_with_template = model_config["prompt_template"].format(
-        #     context=context,
-        #     instruction=instruction,
-        #     char=self.name,
-        #     user=self.user,
-        #     prompt=prompt
-        #     )
-        
         
         chat_history_with_template = self.compile_text(model_config["prompt_template"].format(
             context=context,
-            instruction=instruction,
+            instruction=model_config["instruction"],
             prompt=prompt
         ))
 

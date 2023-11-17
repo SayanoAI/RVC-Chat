@@ -1,0 +1,23 @@
+{
+  "1": {
+    "inputs": {
+      "image": "{{image}}",
+      "choose file to upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "2": {
+    "inputs": {
+      "model": "wd-v1-4-convnextv2-tagger-v2",
+      "threshold": 0.5,
+      "character_threshold": 0.95,
+      "exclude_tags": "",
+      "tags": "",
+      "image": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "WD14Tagger|pysssss"
+  }
+}
