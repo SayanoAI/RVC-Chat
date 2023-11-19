@@ -2,8 +2,9 @@ import json
 import os
 import streamlit as st
 from webui import MENU_ITEMS, ObjectNamespace, get_cwd
-from webui.chat import init_llm_options, init_model_config, init_model_params, load_model_data
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
+
+from webui.chat import init_llm_options, init_model_config, init_model_params, load_model_data
 
 from lib.model_utils import get_hash
 
@@ -72,9 +73,9 @@ def load_model_config(state):
     return state
 
 def render_model_config_form(state):
-    state.model_config.instruction = st.text_area("System's Instruction",value=state.model_config.instruction)
+    state.model_config.instruction = st.text_area("System's Instruction",value=state.model_config.instruction,height=300)
     state.model_config.chat_template = st.text_area("Dialogue Format",value=state.model_config.chat_template)
-    state.model_config.prompt_template = st.text_area("Prompt Template",value=state.model_config.prompt_template,height=400)
+    state.model_config.prompt_template = st.text_area("Prompt Template",value=state.model_config.prompt_template,height=300)
     state.model_config.mapper = st.data_editor(state.model_config.mapper,
                                                         column_order=("_index","value"),
                                                         use_container_width=False,

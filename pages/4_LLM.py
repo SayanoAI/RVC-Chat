@@ -2,12 +2,13 @@ import os
 from time import sleep
 from webui import MENU_ITEMS, SERVERS, ObjectNamespace, get_cwd
 import streamlit as st
+st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 from webui.chat import load_model_data
 from webui.kobold_cpp import start_server
 
 from webui.utils import get_filenames, get_index, pid_is_active
 
-st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
+
 
 from webui.components import active_subprocess_list, st_iframe
 from webui.contexts import ProgressBarContext, SessionStateContext

@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 import streamlit as st
-from webui import MENU_ITEMS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
+from webui import MENU_ITEMS, SERVERS, ObjectNamespace, config, get_cwd, i18n, DEVICE_OPTIONS
 from webui.downloader import OUTPUT_DIR
 from webui.functions import call_function
 from webui.image_generation import describe_image, generate_images
@@ -64,10 +64,10 @@ if __name__=="__main__":
                                               options=state.characters,
                                               index=get_index(state.characters,state.selected_character),
                                               format_func=lambda x: os.path.basename(x))
-        state.selected_llm = col3.selectbox("Choose a language model",
-                                options=state.model_list,
-                                index=get_index(state.model_list,state.selected_llm),
-                                format_func=lambda x: os.path.basename(x))
+        # state.selected_llm = col3.selectbox("Choose a language model",
+        #                         options=state.model_list,
+        #                         index=get_index(state.model_list,state.selected_llm),
+        #                         format_func=lambda x: os.path.basename(x))
         
         state.threshold = col1.select_slider("How easily to trigger function calls (0 is never trigger, AI can always reject your request)",options=[0,0.5,1,1.5,2],value=state.threshold)
 
@@ -79,7 +79,7 @@ if __name__=="__main__":
                 options=DEVICE_OPTIONS,horizontal=True,
                 index=get_index(DEVICE_OPTIONS,state.device))
             
-            if c2.button("Start Chatting",disabled=not (state.selected_character and state.selected_llm and state.user),type="primary"):
+            if c2.button("Start Chatting",disabled=not (state.selected_character and state.user),type="primary"):
                 with st.spinner("Loading model..."):
                     if state.character:
                         state.character.memory = state.memory
@@ -87,10 +87,10 @@ if __name__=="__main__":
                         state.character.user = state.user
                         state.character.loaded = True
                         
-                        if hash(state.character.model_file)!=hash(state.selected_llm):
-                            state.character.load_model(state.selected_llm)
-                            state.character.unload()
-                            st.toast(state.character.load())
+                        # if hash(state.character.model_file)!=hash(state.selected_llm):
+                        state.character.load_model(SERVERS["LLM"].get("model"))
+                        state.character.unload()
+                        st.toast(state.character.load())
                     else:
                         state.character = Character(
                             character_file=state.get("selected_character"),

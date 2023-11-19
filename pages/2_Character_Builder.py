@@ -84,11 +84,11 @@ def render_tts_options_form(state):
 def render_assistant_template_form(state):
     state.assistant_template.name = st.text_input("Character Name",value=state.assistant_template.name)
     ROLE_OPTIONS = ["CHARACTER", "USER"]
-    state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background)
-    state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality)
+    state.assistant_template.background = st.text_area("Background", value=state.assistant_template.background,height=300)
+    state.assistant_template.personality = st.text_area("Personality", value=state.assistant_template.personality,height=300)
     # state.assistant_template.appearance = st.text_area("Appearance", value=state.assistant_template.appearance)
     st.write(f"Appearance: {json.dumps(state.assistant_template.appearance)}")
-    state.assistant_template.scenario = st.text_area("Scenario", value=state.assistant_template.scenario)
+    state.assistant_template.scenario = st.text_area("Scenario", value=state.assistant_template.scenario,height=300)
     st.write("Example Dialogue")
     state.assistant_template.examples = st.data_editor(state.assistant_template.examples,
                                                         column_order=("role","content"),
@@ -99,7 +99,11 @@ def render_assistant_template_form(state):
                                                         use_container_width=True,
                                                         num_rows="dynamic",
                                                         hide_index =True)
-    state.assistant_template.greeting = st.text_area("Greeting",value=state.assistant_template.greeting)
+    state.assistant_template.post_history_instructions = st.text_area(
+        "System message to insert after chat history:",
+        value=state.assistant_template.post_history_instructions,height=300)
+    state.assistant_template.greeting = st.text_area("Greeting",value=state.assistant_template.greeting,height=300)
+    
     return state
 
 def render_character_form(state):

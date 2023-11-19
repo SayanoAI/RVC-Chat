@@ -25,7 +25,7 @@ def start_server(model, host="localhost", port=8000, n_gpu_layers=0, n_ctx=2048)
             return SERVERS["LLM"]["url"]
     
     base_url = f"http://{host}:{port}/api"
-    cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={n_gpu_layers} --contextsize={n_ctx} --skiplauncher --multiuser --usecublas --smartcontext"
+    cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={n_gpu_layers} --contextsize={n_ctx} --skiplauncher --multiuser --usecublas"
     print(f"{cmd=}")
     process = subprocess.Popen(cmd, cwd=CWD)
     for i in range(60): # wait for server to start up
