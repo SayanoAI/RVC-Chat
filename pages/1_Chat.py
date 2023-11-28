@@ -178,16 +178,23 @@ if __name__=="__main__":
                     if state.character.autoplay: augmented_prompt = "**Please continue the story without {{user}}'s input**" 
                     else: augmented_prompt = f"{prompt}\nImage description: {tags}" if tags else prompt
                     print(augmented_prompt)
-                    for response in state.character.generate_text(augmented_prompt):
-                        full_response = response
-                        message_placeholder.markdown(full_response)
-
                     response = call_function(state.character,prompt=prompt,reply=full_response,use_grammar=True,threshold=state.threshold,verbose=True) # calls function
-                    if response is not None:
+                    if response is None:
+                        for response in state.character.generate_text(augmented_prompt):
+                            full_response = response
+                            message_placeholder.markdown(full_response)
+                    else:
                         function_name, args, image_prompt = response
                         with st.spinner("generating image"):
                             images = generate_images(image_prompt)
                             st.image(images)
+
+                    # response = call_function(state.character,prompt=prompt,reply=full_response,use_grammar=True,threshold=state.threshold,verbose=True) # calls function
+                    # if response is not None:
+                    #     function_name, args, image_prompt = response
+                    #     with st.spinner("generating image"):
+                    #         images = generate_images(image_prompt)
+                    #         st.image(images)
 
                 if state.character.has_voice:
                     audio = state.character.text_to_speech(full_response)
