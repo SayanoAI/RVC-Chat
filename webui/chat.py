@@ -155,7 +155,7 @@ class Character:
     # Initialize the character with a name and a voice
     def __init__(self, character_file, memory = 10, threshold=1.5, user="",stt_method="speecht5",device=None,**kwargs):
         self.character_file = character_file
-        self.model_file = SERVERS["LLM"].get("model")
+        self.model_file = SERVERS.LLM_MODEL
         self.voice_model = None
         self.stt_models = None
         self.loaded = False
@@ -332,6 +332,28 @@ class Character:
     def context(self):
         return "\n\n".join([f"PERSONA\n{self.persona}",f"EXAMPLES\n{self.examples}"])
     
+    @property
+    def get_image(self):
+        for i in range(len(self.messages),0,-1):
+            try:
+                msg = self.messages[i-1]
+                if image := msg.get("image"):
+                    with io.BytesIO() as f:
+                        image[0].save(f,format="PNG")
+                        return f.getvalue()
+            except Exception as e:
+                print(e)
+                return None
+
+    @property 
+    def summarized_history(self):
+        from webui.sumy_summarizer import get_summary
+
+        context = "\n".join([self.context_summary,self.chat_history])
+        summary = get_summary(context,num_sentences=self.memory)
+        
+        return summary
+    
     def compile_text(self, text: str):
         if not text: return ""
 
@@ -342,9 +364,9 @@ class Character:
             user=self.user
         ))
     
-    def get_relevant_history(self,prompt):
+    def get_relevant_history(self,prompt,n_results=1):
         model_config = self.model_data["config"]
-        history = self.ltm.get_query(prompt,n_results=self.memory,threshold=self.threshold)
+        history = self.ltm.get_query(prompt,n_results=n_results,threshold=self.threshold)
         if len(history): print(history)
 
         return "\n".join([
@@ -496,15 +518,15 @@ class Character:
             print(f"moving memory to ltm: {self.context_index}")
             self.update_ltm(self.messages[:self.context_index])
             self.context_index+=self.max_memory
-            self.context_summary = self.summarize_context()
+            self.context_summary = self.summarized_history
             
         # summarize memory
         elif self.loaded and self.LLM.token_count(self.context)+self.context_size>self.model_data["params"]["n_ctx"]:
             self.context_index+=self.memory
-            self.context_summary = self.summarize_context() #summarizes the past
+            self.context_summary = self.summarized_history #summarizes the past
         
         # Concatenate chat history and system template
-        history = "\n".join([self.get_relevant_history(prompt),self.chat_history,self.post_history_instructions])
+        history = "\n".join([self.get_relevant_history(prompt,n_results=self.memory),self.chat_history,self.post_history_instructions])
         system = "\n\n".join([model_config["instruction"],self.context])
         
         chat_history_with_template = self.compile_text(model_config["prompt_template"].format(
@@ -514,15 +536,6 @@ class Character:
         ))
 
         return chat_history_with_template
-    
-    def summarize_context(self):
-        from webui.sumy_summarizer import get_summary
-
-        summary = get_summary(self.chat_history,num_sentences=self.memory)
-        context = "\n".join([self.persona,self.context_summary,summary])
-        
-        print(context)
-        return context
 
     # Define a method to convert text to speech
     def text_to_speech(self, text):

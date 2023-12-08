@@ -4,39 +4,33 @@ import random
 import subprocess
 from time import sleep
 from typing import Any, Iterator, List, Optional, Union
-import psutil
 import requests
 import asyncio
 from webui import SERVERS, get_cwd
-from webui.utils import gc_collect, pid_is_active
+from webui.utils import pid_is_active, stop_server
 
 CWD = get_cwd()
 
 def start_server(model, host="localhost", port=8000, n_gpu_layers=0, n_ctx=2048):
-    if pid_is_active(None if SERVERS["LLM"] is None else SERVERS["LLM"].get("pid")):
-        if model!=SERVERS["LLM"].get("model"): # change model
-            pid = SERVERS["LLM"].get("pid")
-            process = psutil.Process(pid)
-            if process.is_running():
-                process.kill()
-                gc_collect()
-                print(f"Switching models: process {pid} killed.")
+    pid = SERVERS.LLM_PID
+    if pid_is_active(pid):
+        if model!=SERVERS.LLM_MODEL: # change model
+            stop_server(pid)
+            print(f"Switching models: process {pid} killed.")
         else:
-            return SERVERS["LLM"]["url"]
+            return SERVERS.LLM_URL
     
     base_url = f"http://{host}:{port}/api"
-    cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={n_gpu_layers} --contextsize={n_ctx} --skiplauncher --multiuser --usecublas"
+    cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={n_gpu_layers} --contextsize={n_ctx} --skiplauncher --multiuser --usecublas --quiet"
     print(f"{cmd=}")
     process = subprocess.Popen(cmd, cwd=CWD)
     for i in range(60): # wait for server to start up
         try:
             with requests.get(base_url) as req:
                 if req.status_code==200:
-                    SERVERS["LLM"] = {
-                        "url": base_url,
-                        "pid": process.pid,
-                        "model": model
-                    }
+                    SERVERS.LLM_URL = base_url
+                    SERVERS.LLM_PID = process.pid
+                    SERVERS.LLM_MODEL = model
                     break
         except Exception:
             sleep(1.)

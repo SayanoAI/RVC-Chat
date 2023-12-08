@@ -7,13 +7,12 @@ import os
 import random
 import subprocess
 import time
-from typing import Tuple
 import numpy as np
 import requests
 from PIL import Image
 
 from webui import SERVERS, get_cwd
-from webui.utils import pid_is_active
+from webui.utils import  pid_is_active
 
 CWD = get_cwd()
 MAX_INT32 = np.iinfo(np.int32).max
@@ -28,23 +27,38 @@ ORIENTATION_OPTIONS = ["square", "portrait", "landscape"]
 STYLE_OPTIONS = ["anime", "realistic"]
 
 def start_server(host="localhost",port=8188):
-    if pid_is_active(None if SERVERS["SD"] is None else SERVERS["SD"].get("pid")): return SERVERS["SD"]["pid"]
+    pid = SERVERS.SD_PID
+    if pid_is_active(pid): return SERVERS.SD_URL
     root = os.path.join(CWD,".cache","ComfyUI")
     main = os.path.join(root,"main.py")
     cmd = f"python {main} --port={port}"
     process = subprocess.Popen(cmd, cwd=root)
     
-    SERVERS["SD"] = {
-        "pid": process.pid,
-        "url": f"http://{host}:{port}"
-    }
-    return SERVERS["SD"]["pid"]
+    SERVERS.SD_PID = process.pid
+    SERVERS.SD_URL = f"http://{host}:{port}"
 
-def generate_prompt(positive="",subject="",description="",environment="",emotion="",negative="",orientation="square",seed=-1,randomize=False,
+    return SERVERS.SD_URL
+
+def generate_prompt(checkpoint: str=None, positive="",subject="",description="",environment="",emotion="",negative="",
                     positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
                     positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",
-                    style="anime",checkpoint=None,scale=1.,steps=20, cfg=7, name="dpmpp_2m",
+                    style="",scale=1.,steps=20, cfg=7, name="dpmpp_2m",orientation="square",seed=-1,randomize=False,
                     **kwargs):
+    
+    # error check numeric inputs
+    scale = float(scale)
+    cfg = float(cfg)
+    steps = int(steps)
+    seed = int(seed)
+    if scale>2: scale=2.0
+    elif scale<1: scale=1.0
+
+    if cfg>12: cfg=12.0
+    elif cfg<1: cfg=1.0
+
+    if steps>50: steps=50
+    elif steps<20: steps=20
+    
     # Get a compiler
     from pybars import Compiler
     compiler = Compiler()
@@ -61,20 +75,7 @@ def generate_prompt(positive="",subject="",description="",environment="",emotion
         width,height=768,512
     else:
         width,height=512,512
-
-    if not checkpoint:
-        if style.lower()=="realistic": checkpoint="sayano-realistic.safetensors"
-        else: checkpoint="sayano-anime.safetensors"
-
-    if scale>2: scale=2.0
-    elif scale<1: scale=1.0
-
-    if cfg>12: cfg=12.0
-    elif cfg<1: cfg=1.0
-
-    if steps>50: steps=50
-    elif steps<20: steps=20
-
+    
     # Render the template
     sampler = dict(DEFAULT_SAMPLER)
     sampler.update(steps=steps, cfg=cfg, name=name)
@@ -93,6 +94,62 @@ def generate_prompt(positive="",subject="",description="",environment="",emotion
         )
     ))
     return json.loads(output)
+
+def modify_image(image: bytes=None, checkpoint: str=None, positive="",subject="",description="",environment="",emotion="",negative="",
+                    positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
+                    positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",
+                    style="anime", steps=20, cfg=7, name="dpmpp_2m", change_ratio="small",
+                    seed=-1,randomize=False,
+                    **kwargs):
+    # error check numeric inputs
+    cfg = float(cfg)
+    steps = int(steps)
+    seed = int(seed)
+    change_ratio = change_ratio.lower()
+
+    if cfg>12: cfg=12.0
+    elif cfg<1: cfg=1.0
+
+    if steps>50: steps=50
+    elif steps<20: steps=20
+
+    # upload image
+    if type(image)==bytes: image = upload_image(image)
+    
+    # Get a compiler
+    from pybars import Compiler
+    compiler = Compiler()
+
+    # Compile the template
+    workflow = "img2img.txt" if image else "txt2img.txt"
+    with open(os.path.join(CWD,"models","SD",".workflows",workflow),"r") as f:
+        source = f.read()
+    template = compiler.compile(source)
+
+    if change_ratio=="large": denoise = .88
+    elif change_ratio=="medium": denoise=.69
+    elif change_ratio=="small": denoise=.5
+    else: denoise=.95
+
+    # Render the template
+    sampler = dict(DEFAULT_SAMPLER)
+    sampler.update(steps=steps, cfg=cfg, name=name, denoise=denoise)
+    
+    if image:
+        output = template(dict(
+            image=image,
+            checkpoint=checkpoint,
+            width=512,height=512,scale=1.,
+            positive=", ".join(str(i) for i in [
+                positive_prefix,positive,subject,description,emotion,environment,style,positive_suffix] if i and len(i)),
+            negative=", ".join(str(i) for i in [negative_prefix,negative,negative_suffix] if i and len(i)),
+            sampler=dict(
+                seed=random.randint(0,MAX_INT32) if seed<0 or randomize else seed,
+                **sampler
+            )
+        ))
+        return json.loads(output)
+    else: return None
 
 def poll_prompt(prompt: dict, url = None, timeout=60):
     prompt_id = None
@@ -116,9 +173,10 @@ def poll_prompt(prompt: dict, url = None, timeout=60):
 
     return None
 
-def upload_image(image, url=None):
-    
-    filename = hashlib.md5(image).hexdigest()
+def upload_image(image: bytes, url=None):
+    if url is None: url = SERVERS.SD_URL
+
+    filename = hashlib.md5(image).hexdigest() + ".png"
     files = {"image": (filename,image)}
 
     # check if image exists
@@ -133,11 +191,11 @@ def upload_image(image, url=None):
                     img_name = result.get("name")
 
                     if img_name == filename: return filename
-                else: print(req.reason)
+                else: print(f"upload status {req.status_code}: {req.reason}")
     return None
 
 def describe_image(image: bytes, url = None, timeout=60):
-    if url is None: url = SERVERS["SD"]["url"]
+    if url is None: url = SERVERS.SD_URL
 
     # Get a compiler
     from pybars import Compiler
@@ -164,9 +222,8 @@ def describe_image(image: bytes, url = None, timeout=60):
 
     return tags
 
-
 def generate_images(prompt: dict, url = None, timeout=60):
-    if url is None: url = SERVERS["SD"]["url"]
+    if url is None: url = SERVERS.SD_URL
     images = output = []
 
     try:

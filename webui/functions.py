@@ -7,12 +7,12 @@ if TYPE_CHECKING:
     from webui.chat import Character
     from webui.vector_db import VectorDB
 from webui.downloader import BASE_MODELS_DIR
-from webui.image_generation import generate_prompt
+from webui.image_generation import generate_prompt, modify_image
 from webui import ObjectNamespace
 
 FUNCTION_LIST = [
     ObjectNamespace(
-        documents = "can you draw an [object]?|show me what you look like|send me a picture of [object]|draw an [object] for me|please redraw the image [with/without these conditions]|SUBJECT: [words to describe the main image subject]\nDESCRIPTION: [words to describe the main subject's appearance]\nENVIRONMENT: [words to describe the environment or items in it]\nNEGATIVE: [words to describe things to remove from the image]",
+        documents = "can you draw me a [object]?|show me what [noun/pronoun/action] looks like|send me a picture of [object]|draw an [object] for me|SUBJECT: [words to describe the main image subject]\nDESCRIPTION: [words to describe the main subject's appearance]\nENVIRONMENT: [words to describe the environment or items in it]\nNEGATIVE: [words to describe things to remove from the image]",
         function = "generate_prompt",
         arguments = ["subject","description","emotion","environment","negative","orientation","seed","steps","cfg","randomize","scale","style"],
         subject = "string containing main subject of the image (e.g. a playful cat, a beautiful woman, an old man, etc.)",
@@ -26,17 +26,31 @@ FUNCTION_LIST = [
         cfg = "number to show how closely to follow the prompt (7.0-12.0)",
         randomize="boolean to randomize the seed based on what the user wants (create new drawing=true, modify existing drawing=false)",
         scale="number to scale the image by (1.0-2.0)",
-        style="string to show the style of the image (anime|realistic)",
-        STOP="boolean to stop the function call (set to 'True' if the assistant is unhappy)",
+        style="string to describe the style of image (e.g. drawing, photograph, sketch, etc.)",
+        instructions="Construct a JSON object with the following fields: {template}. Use the content below to build the JSON object.\n\n{context}"
+    ),
+    ObjectNamespace(
+        documents = "please redraw your image [with/without these conditions]|can you fix this [conditions]?|there's [something wrong with the image]...|please change [the image] to [something else]|can you make [things to change in the image]?|can you draw [object with conditions]",
+        function = "modify_image",
+        arguments = ["subject","description","emotion","environment","negative","steps","cfg","style","changes"],
+        subject = "string containing main subject of the image (e.g. a playful cat, a beautiful woman, an old man, etc.)",
+        description = "string describing the subject's physical appearance (e.g. hair color, eye color, clothes, etc.)",
+        emotion = "string describing the overall emotion of the subject or environment (e.g. sombre, smile, happy, etc.)",
+        environment = "string describing everything else you want to include in the image (e.g. animals, environment, background, etc.)",
+        negative = "string containing anything the user wants to fix or remove from the drawing (e.g. extra fingers, missing limbs, errors, etc.)",
+        steps = "number of steps to sample (20-40)",
+        cfg = "number to show how closely to follow the prompt (7.0-12.0)",
+        style="string to describe the style of image (e.g. drawing, photograph, sketch, etc.)",
+        change_ratio="string to describe how much to alter the image (small|medium|large)",
         instructions="Construct a JSON object with the following fields: {template}. Use the content below to build the JSON object.\n\n{context}"
     ),
 ]
 FUNCTION_MAP = ObjectNamespace(
     generate_prompt=generate_prompt,
-    
+    modify_image=modify_image
 )
 
-def get_function(char, query: str, threshold=1.,verbose=False):
+def get_function(char: "Character", query: str, threshold=1.,verbose=False):
     results = char.ltm.get_query(query=query,include=["metadatas", "distances"],type="function",threshold=threshold, verbose=verbose)
     if len(results): # found function
         metadata = results[0]["metadata"]
@@ -50,8 +64,8 @@ def get_args(char: "Character", instructions: str, prompt: str, use_grammar=Fals
     
     try:
         prompt_template = char.model_data["config"]["prompt_template"].format(
-            instruction=instructions,
-            context=char.summarize_context(),
+            system=instructions,
+            history=char.summarized_history,
             prompt=prompt
         )
         
@@ -81,27 +95,29 @@ def load_json_grammar(fname=os.path.join(BASE_MODELS_DIR,"LLM","json.gbnf")):
     print(f"{grammar=}")
     return grammar
 
-def call_function(character, prompt: str, reply: str, threshold=1., retries=3, use_grammar=False, verbose=False):
+def call_function(character: "Character", prompt: str, reply: str, threshold=1., retries=3, use_grammar=False, verbose=False, **kwargs):
     try:
+        errors = []
         metadata = get_function(character, prompt, threshold, verbose)
         if metadata is None: metadata = get_function(character, reply, threshold, verbose)
         if metadata and metadata["function"] in FUNCTION_MAP:
+            instructions = metadata['instructions'].format(template=metadata['template'],context=reply)
             while retries>0:
-                instructions = metadata['instructions'].format(template=metadata['template'],context=reply)
-                args = get_args(character, instructions=instructions, prompt=prompt, use_grammar=use_grammar)
+                error_prompt = instructions+f"\nPlease avoid the following errors when generating your prompt: {', '.join(errors)}" if len(errors) else ""
+                args = get_args(character, instructions=instructions, prompt=prompt+error_prompt, use_grammar=use_grammar)
                 
                 if args:
                     try:
-                        is_stopped = args.get("STOP",False)
-                        if is_stopped and int(is_stopped):
-                            print("character refused to execute function")
-                            return None
-                        else:
-                            args = {k:args[k] for k in args if k in metadata['arguments']}
-                            return metadata['function'], args, FUNCTION_MAP[metadata["function"]](**args)
+                        args = {k:args[k] for k in args if k in metadata['arguments']}
+                        if "image" in kwargs:
+                            image = kwargs.pop("image")
+                            args["image"] = character.get_image if image is None else image
+                        args.update(kwargs)
+                        results = FUNCTION_MAP[metadata['function']](**args)
+                        if results is not None: return results
                     except Exception as e:
                         print(e)
-                        
+                        errors.append(e)
                 retries-=1
     except Exception as e:
         print(e)

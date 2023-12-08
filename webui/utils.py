@@ -53,6 +53,7 @@ def get_index(arr,value):
 def gc_collect():
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
     gc.set_threshold(100,10,1)
     gc.collect()
     
@@ -76,7 +77,16 @@ def pid_is_active(pid: int):
             return psutil.pid_exists(pid)
         elif platform.system() == "Linux":
             os.kill(pid, 0)
-    except OSError:
+    except Exception as e:
+        print(e)
         return False
     else:
         return True
+    
+def stop_server(pid):
+    if pid_is_active(pid):
+        process = psutil.Process(pid)
+        if process.is_running():
+            for sub in get_subprocesses(pid):
+                sub.kill()
+            process.kill()

@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from functools import lru_cache
 import os
 import shelve
@@ -22,10 +23,14 @@ N_THREADS_OPTIONS=[1,2,4,8,12,16]
 SR_MAP = {"40k": 40000, "48k": 48000}
 
 class ObjectNamespace(dict):
-    def __init__(self,**kwargs): super().__init__(kwargs)
-    def __missing__(self, name: str): return None
+    def __init__(self,**kwargs):
+        for k,v in kwargs.items():
+            if hasattr(v,"items"): self[k]=ObjectNamespace(**v)
+            else: self[k]=v
+
+    def __missing__(self, name: str): return ObjectNamespace()
     def get(self, name: str, default_value=None): return self.__getitem__(name) if name in self.keys() else default_value
-    def __getattr__(self, name: str): return self.__getitem__(name) if name in self.keys() else None
+    def __getattr__(self, name: str): return self.__getitem__(name) if name in self.keys() else ObjectNamespace()
     def __getitem__(self, name: str):
         value = super().__getitem__(name) # get the value from the parent class
         if isinstance(value, weakref.ref): # check if the value is a weak reference
@@ -39,20 +44,80 @@ class ObjectNamespace(dict):
     def __getstate__(self): return dict(**self)
 
 class PersistedDict:
-    def __init__(self,fname,**kwargs):
-        self.fname = fname
-        with shelve.open(fname) as shelf:
-            for k in kwargs:
-                shelf[k] = kwargs[k]
-            print(f"{shelf=}")
+    # initialize the class with an optional filename and dict arguments
+    def __init__(self, filename=None, **data):
+        # store the filename as an attribute
+        self.filename = filename
 
-    def __getitem__(self, name: str):
-        with shelve.open(self.fname) as shelf:
-            return shelf.get(name,None)
+        for key, value in data.items():
+            # recursively convert the values to NestedDict
+            self.__setattr__(key, value)
+
+    # define a context manager to open and close the shelve file
+    @contextmanager
+    def open_shelf(self):
+        # if filename is given, open the shelve file
+        shelf = shelve.open(self.filename) if self.filename else {}
+
+        # yield the shelf as the resource
+        yield shelf
+        if hasattr(shelf,"close"):
+            # close the shelf when exiting the context
+            shelf.close()
+
+    # define a method to get the attribute value given a key
+    def __getattr__(self, key: str):
+        is_private = key.startswith("_") and key.endswith("_")
         
-    def __setitem__(self, name: str, value):
-        with shelve.open(self.fname) as shelf:
-            shelf[name] = value
+        # if the key is filename, set it as an attribute
+        if key == "filename" or is_private:
+            if key in self.__dict__: return self.__dict__[key]
+            else: return None
+
+        # use the context manager to open the shelve file
+        with self.open_shelf() as shelf:
+            # if the key exists in the shelve file, return the value
+            # return getattr(shelf, key, None)
+            if key in shelf:
+                return shelf[key]
+            # else, return None
+            else:
+                return None
+
+    # define a method to set the attribute value given a key
+    def __setattr__(self, key, value):
+        # if the key is filename, set it as an attribute
+        if key == "filename":
+            self.__dict__[key] = value
+        # else, use the context manager to open the shelve file
+        else:
+            with self.open_shelf() as shelf:
+                # store the value in the shelve file
+                print(f"{key}={value}")
+                shelf[key] = value
+
+    # define a method to represent the class as a dict
+    def __repr__(self):
+        # initialize an empty dict
+        result = {}
+        # use the context manager to open the shelve file
+        with self.open_shelf() as shelf:
+            # loop through the keys in the shelve file
+            for key in shelf.keys():
+                # add the key and value to the result
+                result[key] = shelf[key]
+        # return the result
+        return str(result)
+    
+    def __setitem__(self, key, value): self.__setattr__(key, value)
+    def __getitem__(self, key): self.__getattr__(key)
+    def __lt__(self,_): return False
+    def __eq__(self,other):
+        if hasattr(other,"filename"): return self.filename==other.filename
+        else: return False
+    def __call__(self,*args,**kwargs):
+        print(f"{args=}, {kwargs=}")
+        return str(self)
     
 @lru_cache
 def load_config():

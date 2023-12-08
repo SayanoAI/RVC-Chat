@@ -9,7 +9,7 @@ import streamlit as st
 import urllib.request
 from webui import PITCH_EXTRACTION_OPTIONS, get_cwd, i18n
 from webui.contexts import ProgressBarContext
-from webui.downloader import save_file, save_file_generator
+from webui.downloader import BASE_MODELS_DIR, save_file, save_file_generator
 from webui.image_generation import MAX_INT32, ORIENTATION_OPTIONS, SAMPLER_OPTIONS, STYLE_OPTIONS
 from webui.utils import gc_collect, get_filenames, get_index, get_subprocesses
 
@@ -252,15 +252,17 @@ def initial_image_generation_state():
         style="anime"
     )
 
-def get_sd_model_name(): return [""]+[os.path.basename(fname) for fname in get_filenames("./models","SD",["safetensors","ckpt"])]
+def get_sd_model_name():
+    return [os.path.basename(fname)
+            for fname in get_filenames(
+                root=os.path.join(BASE_MODELS_DIR,"SD"),
+                exts=["safetensors","ckpt"])]
 
 def image_generation_form(init_state=initial_image_generation_state()):
     state = initial_image_generation_state()
     state.update(init_state)
     # Create a text input for the user to enter a prompt
     st.write("Positive Prompts")
-    # state.positive = st.text_area("positive",value=state.positive)
-    # state.positive_suffix = st.text_area("positive_suffix",value=state.positive_suffix)
     state.subject = st.text_area("The main subject of the image (e.g. a cat sitting on a mat, a woman standing, etc.)",value=state.subject)
     state.description = st.text_area("Physical appearance of the subject (e.g. hair color, eye color, clothes, etc.)",value=state.description)
     state.environment = st.text_area("Everything else you want to include in the image (e.g. animals, accessories, background, actions, etc.)",value=state.environment)
@@ -270,7 +272,7 @@ def image_generation_form(init_state=initial_image_generation_state()):
     c1, c2, c3 = st.columns(3)
     
 
-    state.orientation = c1.radio("Orientation",horizontal=True,options=ORIENTATION_OPTIONS,index=get_index(ORIENTATION_OPTIONS,state.width))
+    state.orientation = c1.radio("Orientation",horizontal=True,options=ORIENTATION_OPTIONS,index=get_index(ORIENTATION_OPTIONS,state.orientation))
     state.name = c2.selectbox("Sampler Name",options=SAMPLER_OPTIONS,index=get_index(SAMPLER_OPTIONS,state.name))
     state.steps = c3.number_input("Steps",min_value=1,max_value=100,step=1,value=state.steps)
     
@@ -279,10 +281,9 @@ def image_generation_form(init_state=initial_image_generation_state()):
     state.scale = c2.number_input("Upscale (1.0=disabled)",min_value=1.,max_value=2.,step=.1,value=state.scale)
     state.seed = c3.number_input("Seed",min_value=-1,max_value=MAX_INT32,step=1,value=state.seed,disabled=state.randomize)
     
-    
     MODEL_OPTIONS = get_sd_model_name()
     c1, c2 = st.columns(2)
-    state.style = c1.radio("Image Style",horizontal=True,options=STYLE_OPTIONS,index=get_index(STYLE_OPTIONS,state.style))
-    # state.checkpoint = c2.selectbox("Checkpoint Name",options=MODEL_OPTIONS,index=get_index(MODEL_OPTIONS,state.checkpoint))
+    # state.style = c1.radio("Image Style",horizontal=True,options=STYLE_OPTIONS,index=get_index(STYLE_OPTIONS,state.style))
+    state.checkpoint = c1.selectbox("Checkpoint Name",options=MODEL_OPTIONS,index=get_index(MODEL_OPTIONS,state.checkpoint))
 
     return state

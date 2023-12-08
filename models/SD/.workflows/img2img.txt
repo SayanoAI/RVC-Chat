@@ -1,0 +1,107 @@
+{
+  "3": {
+    "inputs": {
+      "seed": {{sampler.seed}},
+      "steps": {{sampler.steps}},
+      "cfg": {{sampler.cfg}},
+      "sampler_name": "{{sampler.name}}",
+      "scheduler": "karras",
+      "denoise": {{sampler.denoise}},
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "70",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+  "4": {
+    "inputs": {
+      "ckpt_name": "{{checkpoint}}"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "7": {
+    "inputs": {
+      "text": "{{negative}}",
+      "clip": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "11": {
+    "inputs": {
+      "stop_at_clip_layer": -2,
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPSetLastLayer"
+  },
+  "15": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "19": {
+    "inputs": {
+      "images": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "PreviewImage"
+  },
+  "31": {
+    "inputs": {
+      "pixels": [
+        "72",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEEncode"
+  },
+  "70": {
+    "inputs": {
+      "text": "{{positive}}",
+      "clip": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "72": {
+    "inputs": {
+      "image": "{{image}}",
+      "choose file to upload": "image"
+    },
+    "class_type": "LoadImage"
+  }
+}

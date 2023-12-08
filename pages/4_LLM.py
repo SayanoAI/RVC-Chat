@@ -6,9 +6,7 @@ st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 from webui.chat import load_model_data
 from webui.kobold_cpp import start_server
 
-from webui.utils import get_filenames, get_index, pid_is_active
-
-
+from webui.utils import get_filenames, get_index, pid_is_active, stop_server
 
 from webui.components import active_subprocess_list, st_iframe
 from webui.contexts import ProgressBarContext, SessionStateContext
@@ -28,7 +26,7 @@ def render_model_params_form(state):
 
 def initial_state():
     return ObjectNamespace(
-        model=None,
+        model=SERVERS.LLM_MODEL,
         n_ctx=2048,
         n_gpu_layers=0
     )
@@ -40,7 +38,8 @@ def get_params(model):
 
 if __name__=="__main__":
     with SessionStateContext("llm_api",initial_state()) as state:
-        is_active = pid_is_active(None if SERVERS["LLM"] is None else SERVERS["LLM"].get("pid"))
+        pid = SERVERS.LLM_PID
+        is_active = pid_is_active(pid)
 
         state.model = st.selectbox("Choose a language model",
             options=get_model_list(),
@@ -68,4 +67,8 @@ if __name__=="__main__":
                 
         active_subprocess_list()
         
-        if is_active: st_iframe(url=SERVERS["LLM"]["url"],height=800)
+        if is_active:
+            if st.button("Stop Server",type="primary"):
+                stop_server(pid)
+                st.experimental_rerun()
+            st_iframe(url=SERVERS.LLM_URL,height=800)

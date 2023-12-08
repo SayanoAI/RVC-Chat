@@ -76,7 +76,7 @@ def render_model_config_form(state):
     state.model_config.instruction = st.text_area("System's Instruction",value=state.model_config.instruction,height=300)
     state.model_config.chat_template = st.text_area("Dialogue Format",value=state.model_config.chat_template)
     state.model_config.prompt_template = st.text_area("Prompt Template",value=state.model_config.prompt_template,height=300)
-    state.model_config.mapper = st.data_editor(state.model_config.mapper,
+    state.model_config.mapper = st.data_editor(dict(state.model_config.mapper),
                                                         column_order=("_index","value"),
                                                         use_container_width=False,
                                                         num_rows="fixed",

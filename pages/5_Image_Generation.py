@@ -3,10 +3,9 @@ import random
 from time import sleep
 import numpy as np
 import streamlit as st
-from PIL import Image
-from webui import MENU_ITEMS, SERVERS, ObjectNamespace, get_cwd
+from webui import MENU_ITEMS, SERVERS, get_cwd
 from webui.image_generation import describe_image, generate_images, start_server, generate_prompt
-from webui.utils import pid_is_active
+from webui.utils import pid_is_active, stop_server
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
 
 from webui.components import active_subprocess_list, image_generation_form, initial_image_generation_state
@@ -25,8 +24,8 @@ if __name__=="__main__":
         state.port = st.number_input("Port", value=state.port or 8188)
         state.url = st.text_input("Server URL", value = f"http://{state.host}:{state.port}")
         placeholder = st.container()
-        
-        is_active = pid_is_active(None if SERVERS["SD"] is None else SERVERS["SD"].get("pid"))
+        pid = SERVERS.SD_PID
+        is_active = pid_is_active(pid)
         if st.button("Start Server",disabled=is_active):
             with ProgressBarContext([1]*5,sleep,"Waiting for comfyui to load") as pb:
                 start_server(host=state.host,port=state.port)
@@ -34,6 +33,10 @@ if __name__=="__main__":
                 st.experimental_rerun()
 
         if is_active:
+            if st.button("Stop Server",type="primary"):
+                stop_server(pid)
+                st.experimental_rerun()
+                
             with st.form("generate"):
                 state = image_generation_form(state)
 

@@ -84,6 +84,8 @@ def download_link_generator(download_link: str,model_list: List[str]):
 
 def save_file(params: Tuple[str, any]):
     (data_path, datum) = params
+    dirname = os.path.dirname(data_path)
+    if not os.path.exists(dirname): os.makedirs(dirname,exist_ok=True)
     if "zip" in os.path.splitext(data_path)[-1]: return save_zipped_files(params) # unzip
     else:
         try:
