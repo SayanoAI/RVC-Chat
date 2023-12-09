@@ -27,7 +27,7 @@ if __name__=="__main__":
         pid = SERVERS.SD_PID
         is_active = pid_is_active(pid)
         if st.button("Start Server",disabled=is_active):
-            with ProgressBarContext([1]*5,sleep,"Waiting for comfyui to load") as pb:
+            with ProgressBarContext([1],sleep,"Waiting for comfyui to load") as pb:
                 start_server(host=state.host,port=state.port)
                 pb.run()
                 st.experimental_rerun()
@@ -46,7 +46,7 @@ if __name__=="__main__":
                         state.seed=random.randint(0,MAX_INT32)
                     prompt = generate_prompt(**state)
                     state.images = generate_images(prompt=prompt)
-                    st.experimental_rerun()
+                    # st.experimental_rerun()
             
             if state.images:
                 st.image(state.images)

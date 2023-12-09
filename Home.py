@@ -9,11 +9,17 @@ st.set_page_config("RVC Chat",layout="centered",menu_items=MENU_ITEMS)
 
 from webui.components import file_downloader, file_uploader_form
 
-from webui.downloader import BASE_CACHE_DIR, BASE_MODELS, BASE_MODELS_DIR, GIT_REPOS, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, SD_MODELS, download_link_generator, git_install
-
-CWD = get_cwd()
+from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, GIT_REPOS, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, SD_MODELS, download_link_generator, git_install
 
 from webui.contexts import ProgressBarContext
+
+get_cwd()
+
+LLM_MAPPER = {
+    "neuralhermes-2.5-mistral-7b.Q4_K_M.gguf": "8GB VRAM",
+    "stablelm-zephyr-3b.Q5_K_M.gguf": "< 8GB VRAM",
+    "LLaMA2-13B-Tiefighter.Q4_K_M.gguf": "> 8GB VRAM"
+}
 
 def render_download_lib(lib_name: str):
     col1, col2 = st.columns(2)
@@ -47,12 +53,15 @@ def after_git(lib_name, location):
             if not os.path.isfile(wd14_tagger_model):
                 file_downloader((wd14_tagger_model,"https://huggingface.co/SmilingWolf/wd-v1-4-convnextv2-tagger-v2/resolve/main/model.onnx"))
 
-def render_model_checkboxes(generator):
+def render_model_checkboxes(generator,mapper={}):
     not_downloaded = []
     for model_path,link in generator:
         col1, col2, col3 = st.columns(3)
         is_downloaded = os.path.exists(model_path)
-        col1.checkbox(os.path.basename(model_path),value=is_downloaded,disabled=True)
+        name = os.path.basename(model_path)
+        label = mapper.get(name)
+        if label: name+=f" ({label})" # attach label
+        col1.checkbox(name,value=is_downloaded,disabled=True)
         if not is_downloaded: not_downloaded.append((model_path,link))
         col2.markdown(f"[Download Link]({link})")
         if col3.button("Download",disabled=is_downloaded,key=model_path):
@@ -100,7 +109,7 @@ if __name__=="__main__":
     
     with st.expander("Chat Models"):
         generator = [(os.path.join(BASE_MODELS_DIR,"LLM",os.path.basename(link)),link) for link in LLM_MODELS]
-        to_download = render_model_checkboxes(generator)
+        to_download = render_model_checkboxes(generator,mapper=LLM_MAPPER)
         with ProgressBarContext(to_download,file_downloader,"Downloading models") as pb:
             st.button("Download All",key="download-all-chat-models",disabled=len(to_download)==0,on_click=pb.run)
 

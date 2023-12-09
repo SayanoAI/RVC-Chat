@@ -17,10 +17,11 @@ OUTPUT_DIR = os.path.join(BASE_DIR,"output")
 MDX_MODELS = ["MDXNET/Kim_Vocal_2.onnx","MDXNET/UVR-MDX-NET-vocal_FT.onnx"]
 VR_MODELS = ["UVR/UVR-DeEcho-DeReverb.pth","UVR/HP5-vocals+instrumentals.pth"]
 RVC_MODELS = [
-    "RVC/Sayano.pth","RVC/.index/added_IVF1063_Flat_nprobe_1_Sayano_v2.index",
+    "RVC/Sayano.pth",
     "RVC/Mae_v2.pth",
-    "RVC/Fuji.pth","RVC/.index/added_IVF985_Flat_nprobe_1_Fuji_v2.index",
-    "RVC/Monika.pth","RVC/.index/Monika_v2_40k.index"]
+    # "RVC/Claire.pth",
+    "RVC/Fuji.pth",
+    "RVC/Monika.pth"]
 BASE_MODELS = ["hubert_base.pt", "rmvpe.pt"]
 VITS_MODELS = ["VITS/pretrained_ljs.pth"]
 PRETRAINED_MODELS = [
@@ -33,9 +34,9 @@ PRETRAINED_MODELS = [
     "pretrained_v2/f0D40k.pth",
     "pretrained_v2/f0G40k.pth"]
 LLM_MODELS = [
-    "https://huggingface.co/TheBloke/Mistral-7B-OpenOrca-GGUF/resolve/main/mistral-7b-openorca.Q4_K_M.gguf",
-    "https://huggingface.co/TheBloke/Mythalion-13B-GGUF/resolve/main/mythalion-13b.Q4_K_M.gguf",
-    "https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF/resolve/main/openhermes-2.5-mistral-7b.Q4_K_M.gguf"
+    "https://huggingface.co/KoboldAI/LLaMA2-13B-Tiefighter-GGUF/resolve/main/LLaMA2-13B-Tiefighter.Q4_K_M.gguf",
+    "https://huggingface.co/TheBloke/NeuralHermes-2.5-Mistral-7B-GGUF/resolve/main/neuralhermes-2.5-mistral-7b.Q4_K_M.gguf",
+    "https://huggingface.co/TheBloke/stablelm-zephyr-3b-GGUF/resolve/main/stablelm-zephyr-3b.Q5_K_M.gguf"
 ]
 SD_MODELS = [
     "SD/sayano-anime.safetensors",

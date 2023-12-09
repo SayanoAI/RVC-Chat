@@ -249,7 +249,8 @@ def initial_image_generation_state():
         scale=1.0,
         name="dpmpp_2m",
         randomize=True,
-        style="anime"
+        style="anime",
+        images=[]
     )
 
 def get_sd_model_name():

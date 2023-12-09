@@ -2,8 +2,10 @@
 
 REM This script will check if a conda environment is available and create it if not
 for /f %%i in ('cd') do set ENV_NAME=%%~nxi
+set INSTALL_DIR="%userprofile%\Miniconda3"
+SET PATH=%PATH%;%INSTALL_DIR%
 
-conda info --envs | findstr /i %ENV_NAME%
+CALL conda info --envs | findstr /i %ENV_NAME%
 if %errorlevel% == 0 (
     echo %ENV_NAME% environment is already available
 ) else (

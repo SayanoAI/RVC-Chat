@@ -304,19 +304,21 @@ class Character:
         )
     
     @property
-    def chat_history(self):
+    def chat_history(self): return self.compile_chat_history(self.messages[self.context_index:])
+    
+    def compile_chat_history(self, messages):
         model_config = self.model_data["config"]
         return "\n".join([
             model_config["chat_template"].format(role=self.chat_mapper(ex["role"]),content=ex["content"])
-            for ex in self.messages[self.context_index:]
+            for ex in messages
         ])
     
     @property
     def post_history_instructions(self):
         assistant_template = self.character_data["assistant_template"]
-        if "post_history_instructions" in assistant_template:
+        if content:=assistant_template.get("post_history_instructions"):
             model_config = self.model_data["config"]
-            return model_config["chat_template"].format(role=self.chat_mapper("SYSTEM"),content=assistant_template["post_history_instructions"])
+            return model_config["chat_template"].format(role=self.chat_mapper("SYSTEM"),content=content)
         return ""
         
     @property
@@ -349,7 +351,7 @@ class Character:
     def summarized_history(self):
         from webui.sumy_summarizer import get_summary
 
-        context = "\n".join([self.context_summary,self.chat_history])
+        context = "\n".join([self.context,self.chat_history])
         summary = get_summary(context,num_sentences=self.memory)
         
         return summary

@@ -14,17 +14,16 @@ FUNCTION_LIST = [
     ObjectNamespace(
         documents = "can you draw me a [object]?|show me what [noun/pronoun/action] looks like|send me a picture of [object]|draw an [object] for me|SUBJECT: [words to describe the main image subject]\nDESCRIPTION: [words to describe the main subject's appearance]\nENVIRONMENT: [words to describe the environment or items in it]\nNEGATIVE: [words to describe things to remove from the image]",
         function = "generate_prompt",
-        arguments = ["subject","description","emotion","environment","negative","orientation","seed","steps","cfg","randomize","scale","style"],
+        arguments = ["subject","description","emotion","environment","negative","orientation","seed","steps","cfg","scale","style"],
         subject = "string containing main subject of the image (e.g. a playful cat, a beautiful woman, an old man, etc.)",
         description = "string describing the subject's physical appearance (e.g. hair color, eye color, clothes, etc.)",
         emotion = "string describing the overall emotion of the subject or environment (e.g. sombre, smile, happy, etc.)",
         environment = "string describing everything else you want to include in the image (e.g. animals, environment, background, etc.)",
         negative = "string containing anything the user wants to fix or remove from the drawing (e.g. extra fingers, missing limbs, errors, etc.)",
         orientation = "string describing the orientation of the image [square,portrait,landscape]",
-        seed = "number to initialize the image with",
+        seed = "number to initialize the image with (use -1 for random)",
         steps = "number of steps to sample (20-40)",
         cfg = "number to show how closely to follow the prompt (7.0-12.0)",
-        randomize="boolean to randomize the seed based on what the user wants (create new drawing=true, modify existing drawing=false)",
         scale="number to scale the image by (1.0-2.0)",
         style="string to describe the style of image (e.g. drawing, photograph, sketch, etc.)",
         instructions="Construct a JSON object with the following fields: {template}. Use the content below to build the JSON object.\n\n{context}"
@@ -32,7 +31,7 @@ FUNCTION_LIST = [
     ObjectNamespace(
         documents = "please redraw your image [with/without these conditions]|can you fix this [conditions]?|there's [something wrong with the image]...|please change [the image] to [something else]|can you make [things to change in the image]?|can you draw [object with conditions]",
         function = "modify_image",
-        arguments = ["subject","description","emotion","environment","negative","steps","cfg","style","changes"],
+        arguments = ["subject","description","emotion","environment","negative","steps","cfg","style","change_ratio"],
         subject = "string containing main subject of the image (e.g. a playful cat, a beautiful woman, an old man, etc.)",
         description = "string describing the subject's physical appearance (e.g. hair color, eye color, clothes, etc.)",
         emotion = "string describing the overall emotion of the subject or environment (e.g. sombre, smile, happy, etc.)",
@@ -59,13 +58,13 @@ def get_function(char: "Character", query: str, threshold=1.,verbose=False):
         print("failed to find function")
         return None
 
-def get_args(char: "Character", instructions: str, prompt: str, use_grammar=False):
+def get_args(char: "Character", system: str, history: str, prompt: str, use_grammar=False):
     grammar = load_json_grammar() if use_grammar else ""
     
     try:
         prompt_template = char.model_data["config"]["prompt_template"].format(
-            system=instructions,
-            history=char.summarized_history,
+            system=system,
+            history=history,
             prompt=prompt
         )
         
@@ -101,24 +100,34 @@ def call_function(character: "Character", prompt: str, reply: str, threshold=1.,
         metadata = get_function(character, prompt, threshold, verbose)
         if metadata is None: metadata = get_function(character, reply, threshold, verbose)
         if metadata and metadata["function"] in FUNCTION_MAP:
-            instructions = metadata['instructions'].format(template=metadata['template'],context=reply)
+            system = metadata['instructions'].format(template=metadata['template'],context=character.context)
+            history = character.compile_chat_history([
+                dict(role=character.user,content=prompt),
+                dict(role=character.name,content=reply)
+            ])
             while retries>0:
-                error_prompt = instructions+f"\nPlease avoid the following errors when generating your prompt: {', '.join(errors)}" if len(errors) else ""
-                args = get_args(character, instructions=instructions, prompt=prompt+error_prompt, use_grammar=use_grammar)
-                
-                if args:
-                    try:
+                try:
+                    error_prompt = f"\nPlease avoid the following errors when generating your response: {', '.join(errors)}" if len(errors) else ""
+                    args = get_args(character,
+                                    system=system,
+                                    history=history,
+                                    prompt=". ".join(i for i in [prompt,error_prompt] if i),
+                                    use_grammar=use_grammar)
+                    
+                    if args:
                         args = {k:args[k] for k in args if k in metadata['arguments']}
+                        print(f"{args=}")
                         if "image" in kwargs:
                             image = kwargs.pop("image")
                             args["image"] = character.get_image if image is None else image
                         args.update(kwargs)
                         results = FUNCTION_MAP[metadata['function']](**args)
+                        
                         if results is not None: return results
-                    except Exception as e:
-                        print(e)
-                        errors.append(e)
-                retries-=1
+                except Exception as e:
+                    print(e)
+                    errors.append(e)
+                finally: retries-=1
     except Exception as e:
         print(e)
 

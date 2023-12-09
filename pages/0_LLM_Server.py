@@ -56,7 +56,7 @@ if __name__=="__main__":
             state.params = render_model_params_form(state.params)
 
             if st.form_submit_button("Start Server",disabled=is_active):
-                with ProgressBarContext([1]*5,sleep,"Waiting for koboldcpp to load") as pb:
+                with ProgressBarContext([1],sleep,"Waiting for koboldcpp to load") as pb:
                     start_server(state.model,
                                  host=state.host,
                                  port=state.port,

@@ -28,19 +28,21 @@
     "name": "Mae",
     "appearance": {
       "subject": "a caucasian youtuber",
-      "description": "very long silver hair, (red eyes:1.3), delicate face, gentle expression",
-      "environment": "studio lighting, studio, detailed background",
+      "description": "very long black hair, delicate face, gentle expression, blue eyes",
+      "environment": "studio lighting, studio, detailed background, upper body, indoors",
       "negative": "(nude, nsfw:1.2), bad anatomy, twisted, mutated fingers, (asian:2)",
       "seed": 777115644,
       "orientation": "portrait",
       "steps": 20,
-      "cfg": 7.5,
+      "cfg": 8.0,
       "scale": 1.0,
       "name": "dpmpp_2m",
       "randomize": false,
-      "style": "realistic"
+      "style": "realistic",
+      "checkpoint": "sayano-realistic.safetensors"
     },
-    "scenario": "{{user}} is invited to Mae's home for an exclusive roleplaying session."
+    "scenario": "{{user}} is invited to Mae's home for an exclusive roleplaying session.",
+    "post_history_instructions": ""
   },
   "tts_options": {
     "f0_up_key": 3,

@@ -80,7 +80,7 @@ if __name__=="__main__":
             c1, c2 = st.columns(2)
             
             
-            if c2.button("Start Chatting",disabled=not (state.selected_character and state.user),type="primary"):
+            if c2.button("Load Character" if state.character else "Start Chatting",disabled=not (state.selected_character and state.user),type="primary"):
                 with st.spinner("Loading model..."):
                     if state.character:
                         state.character.memory = state.memory

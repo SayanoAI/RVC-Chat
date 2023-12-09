@@ -28,13 +28,16 @@ This project allows you to create character cards (like NAI/character.ai/tavern)
 5. Run the streamlit app with the command `streamlit run Home.py`.
 
 ## Instructions for Chat page
-1. Download one of the following recommended LLMs (or use the homepage downloader):
-* [mistral-7b-openorca](https://huggingface.co/TheBloke/Mistral-7B-OpenOrca-GGUF/resolve/main/mistral-7b-openorca.Q4_K_M.gguf)
-* [mythalion-13b](https://huggingface.co/TheBloke/Mythalion-13B-GGUF/resolve/main/mythalion-13b.Q4_K_M.gguf)
-2. Write your name (this is what the LLM will call you)
-3. Select Your Character (or create one using Character Builder)
-4. Select a language model, you will have to set up the configuration yourself in the Model Config page if you use your own models
-5. Click "Start Chatting" to chat with your model
+1. Download one of the following recommended LLMs and place them in your ./models/LLM folder (or use the homepage downloader):
+* [stablelm-zephyr-3b](https://huggingface.co/TheBloke/stablelm-zephyr-3b-GGUF/resolve/main/stablelm-zephyr-3b.Q5_K_M.gguf) (< 8GB VRAM)
+* [neuralhermes-7b](https://huggingface.co/TheBloke/NeuralHermes-2.5-Mistral-7B-GGUF/resolve/main/neuralhermes-2.5-mistral-7b.Q4_K_M.gguf) (8 GB VRAM)
+* [llama2-13b-tiefighter](https://huggingface.co/KoboldAI/LLaMA2-13B-Tiefighter-GGUF/resolve/main/LLaMA2-13B-Tiefighter.Q4_K_M.gguf) (> 8 GB VRAM)
+
+2. Navigate to LLM Server page and start the server after selecting the downloaded LLM
+3. Navigate to Chat page and write your name (this is what the LLM will call you)
+4. Select Your Character (or create one using Character Builder)
+5. Select a SD model for image generation
+6. Click "Start Chatting" to chat with your model
 
 **Feel free to explore other LLMs. (you will have to build your own model config)**
 

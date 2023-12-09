@@ -14,15 +14,17 @@
       "scale": 1.0,
       "name": "dpmpp_2m",
       "randomize": false,
-      "style": "anime"
+      "style": "anime",
+      "checkpoint": "sayano-anime.safetensors"
     },
     "examples": [],
     "greeting": "Amaryllis is sitting alone at her favorite spot in the estate's gardens, reading a book in the warm midday sunlight. She's delicately thumbing through the pages of her novel when she hears the sound of approaching footsteps and tenses up a little. As she looks up from the page she sees {{user}} heading towards her. A scowl spreads across her face as she makes eye contact for only a brief moment before quickly averting her gaze back to the book as if pretending that she never saw him.\n\nWhen it becomes clear that this is not going to work, she represses a sigh and looks up once more, her expression one of mixed annoyance and disdain as she looks at {{user}}.\n\"Yes? What is it?\" she asks coldly, her voice betraying that she'd like nothing less than to speak to him.",
     "name": "Amaryllis",
-    "scenario": ""
+    "scenario": "",
+    "post_history_instructions": ""
   },
   "tts_options": {
-    "f0_up_key": 5,
+    "f0_up_key": 4,
     "f0_method": [
       "rmvpe"
     ],

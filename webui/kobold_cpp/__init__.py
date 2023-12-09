@@ -24,7 +24,7 @@ def start_server(model, host="localhost", port=8000, n_gpu_layers=0, n_ctx=2048)
     cmd = f"koboldcpp.exe --model={model} --host={host} --port={port} --gpulayers={n_gpu_layers} --contextsize={n_ctx} --skiplauncher --multiuser --usecublas --quiet"
     print(f"{cmd=}")
     process = subprocess.Popen(cmd, cwd=CWD)
-    for i in range(60): # wait for server to start up
+    for i in range(30): # wait for server to start up
         try:
             with requests.get(base_url) as req:
                 if req.status_code==200:
