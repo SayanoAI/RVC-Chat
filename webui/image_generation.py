@@ -11,7 +11,7 @@ import numpy as np
 import requests
 from PIL import Image
 
-from webui import SERVERS, get_cwd
+from webui import SERVERS, get_cwd, config
 from webui.utils import  pid_is_active
 
 CWD = get_cwd()
@@ -31,7 +31,7 @@ def start_server(host="localhost",port=8188):
     if pid_is_active(pid): return SERVERS.SD_URL
     root = os.path.join(CWD,".cache","ComfyUI")
     main = os.path.join(root,"main.py")
-    cmd = f"python {main} --port={port}"
+    cmd = [config.python_cmd, main, f"--port={port}"]
     process = subprocess.Popen(cmd, cwd=root)
     
     SERVERS.SD_PID = process.pid
