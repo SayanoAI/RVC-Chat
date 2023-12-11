@@ -11,7 +11,7 @@ if %errorlevel% == 0 (
 ) else (
     echo %ENV_NAME% environment does not exist
     echo Creating a new environment
-    CALL conda create -n %ENV_NAME% python=3.9 -y
+    CALL conda create -n %ENV_NAME% python=3.10 -y
 )
 
 rem Activate environment
