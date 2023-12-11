@@ -25,6 +25,7 @@ DEFAULT_SAMPLER = {
 SAMPLER_OPTIONS = ["dpmpp_2m","euler_ancestral","dpmpp_sde","dpmpp_2m_sde","dpmpp_3m_sde"]
 ORIENTATION_OPTIONS = ["square", "portrait", "landscape"]
 STYLE_OPTIONS = ["anime", "realistic"]
+NSFW_KEYWORDS = ["nsfw", "nude", "loli", "naked", "sex", "pussy", "penis"]
 
 def start_server(host="localhost",port=8188):
     pid = SERVERS.SD_PID
@@ -41,7 +42,7 @@ def start_server(host="localhost",port=8188):
 
 def generate_prompt(checkpoint: str=None, positive="",subject="",description="",environment="",emotion="",negative="",
                     positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
-                    positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",
+                    positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",censor=False,
                     style="",scale=1.,steps=20, cfg=7, name="dpmpp_2m",orientation="square",seed=-1,randomize=False,
                     **kwargs):
     
@@ -79,6 +80,7 @@ def generate_prompt(checkpoint: str=None, positive="",subject="",description="",
     # Render the template
     sampler = dict(DEFAULT_SAMPLER)
     sampler.update(steps=steps, cfg=cfg, name=name)
+    nsfw_negative = [f"({neg}:1.5)" for neg in NSFW_KEYWORDS if censor]
 
     output = template(dict(
         width=width,
@@ -87,7 +89,7 @@ def generate_prompt(checkpoint: str=None, positive="",subject="",description="",
         scale=scale,
         positive=", ".join(str(i) for i in [
             positive_prefix,positive,subject,description,emotion,environment,style,positive_suffix] if i and len(i)),
-        negative=", ".join(str(i) for i in [negative_prefix,negative,negative_suffix] if i and len(i)),
+        negative=", ".join(str(i) for i in [*nsfw_negative,negative_prefix,negative,negative_suffix] if i and len(i)),
         sampler=dict(
             seed=random.randint(0,MAX_INT32) if seed<0 or randomize else seed,
             **sampler
@@ -97,9 +99,9 @@ def generate_prompt(checkpoint: str=None, positive="",subject="",description="",
 
 def modify_image(image: bytes=None, checkpoint: str=None, positive="",subject="",description="",environment="",emotion="",negative="",
                     positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
-                    positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",
+                    positive_suffix="",negative_suffix="(embedding:bad_pictures:1.1), watermark, signature, text",
                     style="anime", steps=20, cfg=7, name="dpmpp_2m", change_ratio="small",
-                    seed=-1,randomize=False,
+                    seed=-1,randomize=False,censor=False,
                     **kwargs):
     # error check numeric inputs
     cfg = float(cfg)
@@ -134,6 +136,7 @@ def modify_image(image: bytes=None, checkpoint: str=None, positive="",subject=""
     # Render the template
     sampler = dict(DEFAULT_SAMPLER)
     sampler.update(steps=steps, cfg=cfg, name=name, denoise=denoise)
+    nsfw_negative = [f"({neg}:1.5)" for neg in NSFW_KEYWORDS if censor]
     
     if image:
         output = template(dict(
@@ -142,7 +145,7 @@ def modify_image(image: bytes=None, checkpoint: str=None, positive="",subject=""
             width=512,height=512,scale=1.,
             positive=", ".join(str(i) for i in [
                 positive_prefix,positive,subject,description,emotion,environment,style,positive_suffix] if i and len(i)),
-            negative=", ".join(str(i) for i in [negative_prefix,negative,negative_suffix] if i and len(i)),
+            negative=", ".join(str(i) for i in [*nsfw_negative,negative_prefix,negative,negative_suffix] if i and len(i)),
             sampler=dict(
                 seed=random.randint(0,MAX_INT32) if seed<0 or randomize else seed,
                 **sampler
@@ -227,6 +230,7 @@ def generate_images(prompt: dict, url = None, timeout=60):
     images = output = []
 
     try:
+        print(f"{prompt=}")
         result = poll_prompt(prompt, url=url, timeout=timeout)
 
         if result:

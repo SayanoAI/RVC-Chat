@@ -3,6 +3,7 @@
 import random
 import subprocess
 from time import sleep
+import time
 from typing import Any, Iterator, List, Optional, Union
 import requests
 import asyncio
@@ -165,13 +166,9 @@ class Llama:
             result = loop.run_in_executor(None, generate)
             while stream and not result.done():
                 with requests.post(self.check_url, json={"genkey": genkey}, headers=self.headers) as response:
-                    asyncio.sleep(1.)
+                    time.sleep(1.)
                     res = response.json()
                     yield {"choices": res["results"]}
-            
-            # response = await result
-            # res = response.json()
-            # yield {"choices": res["results"]}
         
         loop = asyncio.new_event_loop()
         # create an async iterator from the async generator

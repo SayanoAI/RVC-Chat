@@ -36,9 +36,11 @@ def init_state():
         messages = [],
         user = "User",
         memory=10,
-        threshold=1.5,
+        frequency="sometimes",
         character=None,
         checkpoint=None,
+        censor=True,
+        mute=False,
         device=get_optimal_torch_device(),
     )
     return state
@@ -49,6 +51,12 @@ def refresh_data(state):
     state.characters = get_character_list()
     gc_collect()
     return state
+
+def get_threshold(freq: str):
+    if freq=="rarely": return 1.1
+    elif freq=="sometimes": return 1.5
+    elif freq=="always": return 2
+    else: return 0
 
 @st.cache_data
 def format_label(x: str): return os.path.basename(x)
@@ -65,7 +73,7 @@ if __name__=="__main__":
         col1, col2, col3 = st.columns(3)
         
         state.user = col1.text_input("Your Name", value=state.user)
-        state.selected_character = col2.selectbox("Your state.character",
+        state.selected_character = col2.selectbox("Your Character",
                                               options=state.characters,
                                               index=get_index(state.characters,state.selected_character),
                                               format_func=format_label)
@@ -74,39 +82,36 @@ if __name__=="__main__":
                 options=state.model_list,
                 index=get_index(state.model_list,state.checkpoint))
         
-        state.threshold = col3.select_slider("Threshold to trigger function calls (0=never trigger, 2=always trigger)",options=[0,0.5,1,1.5,2],value=state.threshold)
-
-        with col2:
-            c1, c2 = st.columns(2)
-            
-            
-            if c2.button("Load Character" if state.character else "Start Chatting",disabled=not (state.selected_character and state.user),type="primary"):
-                with st.spinner("Loading model..."):
-                    if state.character:
-                        state.character.memory = state.memory
-                        state.character.load_character(state.selected_character)
-                        state.character.user = state.user
-                        state.character.loaded = True
-                        
-                        # if hash(state.character.model_file)!=hash(state.selected_llm):
-                        state.character.load_model(SERVERS.LLM_MODEL)
-                        state.character.unload()
-                        st.toast(state.character.load())
-                    else:
-                        state.character = Character(
-                            character_file=state.get("selected_character"),
-                            model_file=state.get("selected_llm"),
-                            user=state.get("user"),
-                            device=state.get("device"),
-                            memory=state.memory
-                        )
-                        if state.character and not state.character.loaded: st.toast(state.character.load())
+        state.frequency = col3.select_slider("How often to generate images:",options=["never","rarely","sometimes","always"],value=state.frequency)
+        state.censor = col3.toggle("Avoid Accidental NSFW (not guaranteed)",value=state.censor)
+        
+        if st.button("Load Character" if state.character else "Start Chatting",disabled=not (state.selected_character and state.user),type="primary"):
+            with st.spinner("Loading model..."):
+                if state.character:
+                    state.character.memory = state.memory
+                    state.character.load_character(state.selected_character)
+                    state.character.user = state.user
+                    state.character.loaded = True
+                    
+                    # if hash(state.character.model_file)!=hash(state.selected_llm):
+                    state.character.load_model(SERVERS.LLM_MODEL)
+                    state.character.unload()
+                    st.toast(state.character.load())
+                else:
+                    state.character = Character(
+                        character_file=state.get("selected_character"),
+                        model_file=state.get("selected_llm"),
+                        user=state.get("user"),
+                        device=state.get("device"),
+                        memory=state.memory
+                    )
+                    if state.character and not state.character.loaded: st.toast(state.character.load())
 
         chat_disabled = state.character is None or not state.character.loaded
-        if chat_disabled: hint.warning("Enter your name, select your state.character, and choose an image generation model to get started!")
+        if chat_disabled: hint.warning("Enter your name, select your character, and choose an image generation model to get started!")
 
         if not chat_disabled:
-            state.character.has_voice = col3.checkbox("Voiced", value=state.character.has_voice) # mutes character
+            state.mute = col2.toggle("Mute", value=state.mute, disabled=not state.character.has_voice) # mutes character
 
             # save/load chat history
             save_dir = os.path.join(OUTPUT_DIR,"chat",state.character.name)
@@ -190,7 +195,7 @@ if __name__=="__main__":
                     st.chat_message(state.character.user).write(prompt)
                 
                 full_response = ""
-                images = None
+                images = image_prompt = None
                 with st.chat_message(state.character.name):
                     message_placeholder = st.empty()
                     if state.character.autoplay: augmented_prompt = "**Please continue the story without {{user}}'s input**" 
@@ -215,18 +220,19 @@ if __name__=="__main__":
                             prompt=augmented_prompt,
                             reply=full_response,
                             use_grammar=True,
-                            threshold=state.threshold,
+                            threshold=get_threshold(state.frequency),
                             verbose=True,
                             checkpoint=state.checkpoint,
                             positive_suffix=state.tags,
-                            image=state.uploaded_image
+                            image=state.uploaded_image,
+                            censor=state.censor
                             ) # calls function
-                        if image_prompt is not None:
-                            with st.spinner(f"{state.character.name} is creating an image..."):
-                                images = generate_images(image_prompt)
-                                st.image(images)
+                    if image_prompt is not None:
+                        with st.spinner(f"{state.character.name} is creating an image..."):
+                            images = generate_images(image_prompt)
+                            st.image(images)
 
-                if state.character.has_voice:
+                if not state.mute:
                     audio = state.character.text_to_speech(full_response)
                     if audio:
                         if state.character.autoplay: sd.wait() # wait for speech to finish
