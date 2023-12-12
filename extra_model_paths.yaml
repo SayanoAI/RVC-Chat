@@ -4,3 +4,4 @@ comfyui:
     checkpoints: ../../models/SD
     embeddings: ../../models/SD/embeddings
     loras: ../../models/SD/loras
+    upscale_models: ../../models/SD/upscale_models

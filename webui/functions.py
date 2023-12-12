@@ -46,7 +46,7 @@ FUNCTION_LIST = [
 ]
 FUNCTION_MAP = ObjectNamespace(
     generate_prompt=generate_prompt,
-    modify_image=modify_image
+    modify_image=generate_prompt
 )
 
 def get_function(char: "Character", query: str, threshold=1.,verbose=False):
