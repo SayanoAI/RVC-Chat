@@ -8,7 +8,7 @@
   },
   "2": {
     "inputs": {
-      "model": "wd-v1-4-convnextv2-tagger-v2",
+      "model": "wd-v1-4-moat-tagger-v2",
       "threshold": 0.5,
       "character_threshold": 0.95,
       "exclude_tags": "",

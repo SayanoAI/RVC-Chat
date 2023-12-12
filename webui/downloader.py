@@ -43,7 +43,8 @@ SD_MODELS = [
     "SD/sayano-realistic.safetensors"
 ]
 GIT_REPOS = [
-    ("https://github.com/comfyanonymous/ComfyUI",os.path.join(BASE_CACHE_DIR,"ComfyUI"))
+    ("https://github.com/comfyanonymous/ComfyUI",os.path.join(BASE_CACHE_DIR,"ComfyUI")),
+    ("https://github.com/pythongosssss/ComfyUI-WD14-Tagger",os.path.join(BASE_CACHE_DIR,"ComfyUI","custom_nodes","ComfyUI-WD14-Tagger"))
 ]
 STT_MODELS = [
     "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip"
@@ -64,6 +65,15 @@ def git_install(url: str, location: str):
         subprocess.check_call(cmd_git)
         req = os.path.join(location,"requirements.txt")
         return pip_install("-r",req)
+    except Exception as e:
+        print(f"failed to run {cmd_git}: {e}")
+    return False
+
+def git_update(location: str):
+    cmd_git = ["git","pull"]
+    try:
+        subprocess.check_call(cmd_git,cwd=location)
+        return True
     except Exception as e:
         print(f"failed to run {cmd_git}: {e}")
     return False

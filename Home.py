@@ -9,7 +9,7 @@ st.set_page_config("RVC Chat",layout="centered",menu_items=MENU_ITEMS)
 
 from webui.components import file_downloader, file_uploader_form
 
-from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, GIT_REPOS, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, SD_MODELS, download_link_generator, git_install
+from webui.downloader import BASE_MODELS, BASE_MODELS_DIR, GIT_REPOS, LLM_MODELS, RVC_DOWNLOAD_LINK, RVC_MODELS, SD_MODELS, download_link_generator, git_install, git_update
 
 from webui.contexts import ProgressBarContext
 
@@ -36,22 +36,20 @@ def render_install_git(call_back: FunctionType=None):
         lib_name = os.path.basename(url)
         is_downloaded = os.path.exists(location)
         col1.checkbox(lib_name,value=is_downloaded,disabled=True)
-        if col2.button("Install",disabled=is_downloaded,key=lib_name):
-            git_install(url, location)
-            if call_back: call_back(lib_name, location)
+        if col2.button("Update" if is_downloaded else "Install",key=lib_name):
+            if (git_update(location) if is_downloaded else git_install(url, location)):
+                if call_back: call_back(lib_name, location)
             st.experimental_rerun()
 
 def after_git(lib_name, location):
-    if "ComfyUI" in lib_name:
+    if "ComfyUI-WD14-Tagger" in lib_name:
         if os.path.exists(location):
-            shutil.copy("extra_model_paths.yaml",location) # copy configs
-            # install image tagger
-            url = "https://github.com/pythongosssss/ComfyUI-WD14-Tagger"
-            dir = os.path.join(location,"custom_nodes","ComfyUI-WD14-Tagger")
-            git_install(url, dir)
-            wd14_tagger_model = os.path.join(dir,"models","wd-v1-4-convnextv2-tagger-v2.onnx")
-            if not os.path.isfile(wd14_tagger_model):
-                file_downloader((wd14_tagger_model,"https://huggingface.co/SmilingWolf/wd-v1-4-convnextv2-tagger-v2/resolve/main/model.onnx"))
+            # download image tagger model
+            wd14_tagger_model = "wd-v1-4-moat-tagger-v2"
+            for file in ["model.onnx","selected_tags.csv"]:
+                wd14_tagger_path = os.path.join(location,"models",wd14_tagger_model + os.path.splitext(file)[-1])
+                if not os.path.isfile(wd14_tagger_path):
+                    file_downloader((wd14_tagger_path,f"https://huggingface.co/SmilingWolf/{wd14_tagger_model}/resolve/main/{file}"))
 
 def render_model_checkboxes(generator,mapper={}):
     not_downloaded = []
