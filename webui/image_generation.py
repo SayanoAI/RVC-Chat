@@ -43,7 +43,7 @@ def start_server(host="localhost",port=8188):
 
     return SERVERS.SD_URL
 
-def generate_prompt(checkpoint: str=None, lora: str=None,
+def generate_prompt(checkpoint: str=None, lora: str=None,width=512,height=512,
                     positive="",subject="",description="",environment="",emotion="",negative="",
                     positive_prefix="masterpiece, best quality",negative_prefix="(worst quality, low quality:1.4)",
                     positive_suffix="",negative_suffix="watermark, (embedding:bad_pictures:1.1)",censor=False,
@@ -59,7 +59,7 @@ def generate_prompt(checkpoint: str=None, lora: str=None,
     elif scale<1: scale=1.0
     change_ratio = change_ratio.lower()
 
-    if change_ratio=="large": denoise = .88
+    if change_ratio=="large": denoise=.88
     elif change_ratio=="medium": denoise=.69
     elif change_ratio=="small": denoise=.5
     else: denoise=.95
@@ -75,7 +75,8 @@ def generate_prompt(checkpoint: str=None, lora: str=None,
 
     # upload image
     if type(image)==bytes: image = upload_image(image)
-    if image: workflow = "img2img-upscale.txt" if scale>1 else "img2img.txt"
+    if image: workflow = "img-upscale.txt" if scale>1 else "img2img.txt"
+    else: workflow = "txt2img-upscale.txt" if scale>1 else "txt2img.txt"
 
     # Get a compiler
     compiler = Compiler()
@@ -83,12 +84,15 @@ def generate_prompt(checkpoint: str=None, lora: str=None,
         source = f.read()
     template = compiler.compile(source)
 
-    if orientation.lower()=="portrait":
-        width,height=512,768
-    elif orientation.lower()=="landscape":
-        width,height=768,512
+    if workflow == "img-upscale.txt":
+        width, height = int(width * scale), int(height * scale)
     else:
-        width,height=512,512
+        if orientation.lower()=="portrait":
+            width,height=512,768
+        elif orientation.lower()=="landscape":
+            width,height=768,512
+        else:
+            width,height=512,512
     
     # Render the template
     sampler = dict(DEFAULT_SAMPLER)
@@ -110,6 +114,7 @@ def generate_prompt(checkpoint: str=None, lora: str=None,
             **sampler
         )
     ))
+    print(f"{output}")
     return json.loads(output)
 
 def poll_prompt(prompt: dict, url = None, timeout=60):
@@ -167,14 +172,13 @@ def describe_image(image: bytes, url = None, timeout=60):
     try:
         img_name = upload_image(image, url)
         
-        # Compile the template
         if img_name:
             with open(os.path.join(CWD,"models","SD",".workflows",workflow),"r") as f:
                 source = f.read()
             template = compiler.compile(source)
             prompt = template(dict(image=img_name))
             prompt = json.loads(prompt)
-            print(prompt)
+
             # call prompt
             result = poll_prompt(prompt, url=url, timeout=timeout)
             if result: tags = ", ".join(result["outputs"]["2"]["tags"]).replace("_"," ")
@@ -190,16 +194,18 @@ def generate_images(prompt: dict=None, url = None, timeout=60, *args, **kwargs):
     images = output = []
 
     try:
-        print(f"{prompt=}")
         result = poll_prompt(prompt, url=url, timeout=timeout)
 
         if result:
-            images = result["outputs"]["19"]["images"]
-            
-            for image in images:
-                with requests.get(f"{url}/view",stream=True,params=image,headers=HEADERS) as req:
-                    if req.status_code==200 and req.content:
-                        output.append(Image.open(io.BytesIO(req.content)))
+            output_keys = [k for k,v in prompt.items() if v.get("class_type")=="PreviewImage"]
+
+            for key in output_keys:
+                images = result["outputs"][key]["images"]
+                
+                for image in images:
+                    with requests.get(f"{url}/view",stream=True,params=image,headers=HEADERS) as req:
+                        if req.status_code==200 and req.content:
+                            output.append(Image.open(io.BytesIO(req.content)))
 
     except Exception as e:
         print(e)

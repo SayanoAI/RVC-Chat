@@ -37,6 +37,13 @@ if __name__=="__main__":
                 stop_server(pid)
                 st.experimental_rerun()
                 
+            img_file = st.file_uploader("Upload Image for Interrogation",type=["png","jpg","jpeg"])
+            if img_file:
+                st.image(img_file)
+                if st.button("Describe Uploaded Image"):
+                    with st.spinner("Examining image..."):
+                        state.tags = describe_image(img_file.read())
+            
             with st.form("generate"):
                 state = image_generation_form(state)
 
@@ -44,20 +51,19 @@ if __name__=="__main__":
                 if st.form_submit_button("Generate"):
                     if state.randomize or state.seed<0:
                         state.seed=random.randint(0,MAX_INT32)
-                    prompt = generate_prompt(**state)
+                    prompt = generate_prompt(image=img_file.read() if img_file else None,**state)
                     state.images = generate_images(prompt=prompt)
                     # st.experimental_rerun()
             
             if state.images:
                 st.image(state.images)
 
-            # with st.form("describe_image", clear_on_submit=True):
-            img_file = st.file_uploader("Upload Image for Interrogation",type=["png","jpg","jpeg"])
-            if img_file: st.image(img_file)
-            
-            if st.button("Describe Image",disabled=not bool(img_file)):
-                state.tags = describe_image(img_file.read())
+                if st.button("Describe Generated Image"):
+                    with st.spinner("Examining image..."):
+                        state.tags = describe_image(state.images[0].tobytes())
 
             st.write(state.tags)
+            # with st.form("describe_image", clear_on_submit=True):
+            
 
         active_subprocess_list()

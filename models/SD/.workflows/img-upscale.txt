@@ -1,0 +1,50 @@
+{
+  "72": {
+    "inputs": {
+      "image": "{{image}}",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "74": {
+    "inputs": {
+      "model_name": "RealESRGAN_x4plus.pth"
+    },
+    "class_type": "UpscaleModelLoader"
+  },
+  "75": {
+    "inputs": {
+      "images": [
+        "78",
+        0
+      ]
+    },
+    "class_type": "PreviewImage"
+  },
+  "76": {
+    "inputs": {
+      "upscale_model": [
+        "74",
+        0
+      ],
+      "image": [
+        "72",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel"
+  },
+  "78": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": {{width}},
+      "height": {{height}},
+      "crop": "disabled",
+      "image": [
+        "76",
+        0
+      ]
+    },
+    "class_type": "ImageScale"
+  }
+}

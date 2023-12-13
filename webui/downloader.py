@@ -40,11 +40,13 @@ LLM_MODELS = [
 ]
 SD_MODELS = [
     "SD/sayano-anime.safetensors",
-    "SD/sayano-realistic.safetensors"
+    "SD/sayano-realistic.safetensors",
+    "SD/upscale_models/RealESRGAN_x4plus.pth"
 ]
+COMFY_CUSTOM_NODES_DIR = os.path.join(BASE_CACHE_DIR,"ComfyUI","custom_nodes")
 GIT_REPOS = [
-    ("https://github.com/comfyanonymous/ComfyUI",os.path.join(BASE_CACHE_DIR,"ComfyUI")),
-    ("https://github.com/pythongosssss/ComfyUI-WD14-Tagger",os.path.join(BASE_CACHE_DIR,"ComfyUI","custom_nodes","ComfyUI-WD14-Tagger"))
+    ("https://github.com/comfyanonymous/ComfyUI",BASE_CACHE_DIR),
+    ("https://github.com/pythongosssss/ComfyUI-WD14-Tagger",COMFY_CUSTOM_NODES_DIR)
 ]
 STT_MODELS = [
     "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip"
@@ -64,7 +66,8 @@ def git_install(url: str, location: str):
     try:
         subprocess.check_call(cmd_git)
         req = os.path.join(location,"requirements.txt")
-        return pip_install("-r",req)
+        if os.path.isfile(req): return pip_install("-r",req,"--no-deps")
+        else: return True
     except Exception as e:
         print(f"failed to run {cmd_git}: {e}")
     return False

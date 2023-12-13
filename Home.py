@@ -31,15 +31,16 @@ def render_download_lib(lib_name: str):
         st.experimental_rerun()
 
 def render_install_git(call_back: FunctionType=None):
-    col1, col2 = st.columns(2)
-    for url,location in GIT_REPOS:
+    for url,dirname in GIT_REPOS:
+        col1, col2 = st.columns(2)
         lib_name = os.path.basename(url)
+        location = os.path.join(dirname,lib_name)
         is_downloaded = os.path.exists(location)
         col1.checkbox(lib_name,value=is_downloaded,disabled=True)
         if col2.button("Update" if is_downloaded else "Install",key=lib_name):
             if (git_update(location) if is_downloaded else git_install(url, location)):
-                if call_back: call_back(lib_name, location)
-            st.experimental_rerun()
+                if call_back and call_back(lib_name, location):
+                    st.toast(f"Successfully installed {lib_name} in {location}!")
 
 def after_git(lib_name, location):
     if "ComfyUI-WD14-Tagger" in lib_name:
