@@ -356,14 +356,16 @@ class Character:
         
         return summary
     
-    def compile_text(self, text: str):
+    def compile_text(self, text: str, *args, **kwargs):
         if not text: return ""
 
         compiler = Compiler()
         template = compiler.compile(text)
         return template(dict(
             char=self.name,
-            user=self.user
+            user=self.user,
+            *args,
+            **kwargs
         ))
     
     def get_relevant_history(self,prompt,n_results=1):

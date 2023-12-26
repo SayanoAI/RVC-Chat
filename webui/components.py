@@ -4,14 +4,18 @@ import os
 from pathlib import Path
 import random
 from webui import ObjectNamespace
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 import streamlit as st
+import sounddevice as sd
 import urllib.request
 from webui import PITCH_EXTRACTION_OPTIONS, get_cwd, i18n
 from webui.contexts import ProgressBarContext
 from webui.downloader import BASE_MODELS_DIR, save_file, save_file_generator
-from webui.image_generation import MAX_INT32, ORIENTATION_OPTIONS, SAMPLER_OPTIONS, STYLE_OPTIONS
+from webui.image_generation import MAX_INT32, ORIENTATION_OPTIONS, SAMPLER_OPTIONS
 from webui.utils import gc_collect, get_filenames, get_index, get_subprocesses
+
+if TYPE_CHECKING:
+    from webui.chat import Character
 
 CWD = get_cwd()
     
@@ -248,16 +252,27 @@ def initial_image_generation_state():
         cfg=7.5,
         scale=1.0,
         name="dpmpp_2m",
+        checkpoint=None,
+        lora=None,
         randomize=True,
-        style="anime",
+        style="",
         images=[]
     )
 
-def get_sd_model_name():
+@st.cache_data(ttl=60)
+def get_sd_model_names():
     return [os.path.basename(fname)
             for fname in get_filenames(
-                root=os.path.join(BASE_MODELS_DIR,"SD"),
+                root=BASE_MODELS_DIR,
+                folder="SD",
                 exts=["safetensors","ckpt"])]
+
+@st.cache_data(ttl=60)
+def get_sd_lora_names():
+    return [os.path.basename(fname)
+            for fname in get_filenames(
+                root=os.path.join(BASE_MODELS_DIR,"SD","loras"),
+                exts=["safetensors"])]
 
 def image_generation_form(init_state=initial_image_generation_state()):
     state = initial_image_generation_state()
@@ -282,9 +297,12 @@ def image_generation_form(init_state=initial_image_generation_state()):
     state.scale = c2.number_input("Upscale (1.0=disabled)",min_value=1.,max_value=2.,step=.1,value=state.scale)
     state.seed = c3.number_input("Seed",min_value=-1,max_value=MAX_INT32,step=1,value=state.seed,disabled=state.randomize)
     
-    MODEL_OPTIONS = get_sd_model_name()
+    
     c1, c2 = st.columns(2)
     # state.style = c1.radio("Image Style",horizontal=True,options=STYLE_OPTIONS,index=get_index(STYLE_OPTIONS,state.style))
+    MODEL_OPTIONS = get_sd_model_names()
     state.checkpoint = c1.selectbox("Checkpoint Name",options=MODEL_OPTIONS,index=get_index(MODEL_OPTIONS,state.checkpoint))
+    # LORA_OPTIONS = get_sd_lora_names()
+    # state.lora = c2.selectbox("LoRA Name",options=LORA_OPTIONS,index=get_index(LORA_OPTIONS,state.lora))
 
     return state

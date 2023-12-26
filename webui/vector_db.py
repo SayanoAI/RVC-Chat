@@ -13,24 +13,24 @@ def get_db_client():
     client = chromadb.Client()
     return client
 
-def get_collection_and_key(name,embedding_function=None):
+def get_collection_and_key(name,embedding_function=None,distance_metric="cosine"):
     client = get_db_client()
     num = len(client.list_collections())
 
     # Create a collection for function calls
     key = hashlib.md5(f"{name}-{num}".encode('utf-8')).hexdigest()
     if embedding_function is None:
-        collection = client.get_or_create_collection(key)
+        collection = client.get_or_create_collection(key,metadata={"hnsw:space": distance_metric})
     else:
-        collection = client.get_or_create_collection(key,embedding_function=embedding_function)
+        collection = client.get_or_create_collection(key,embedding_function=embedding_function,metadata={"hnsw:space": distance_metric})
 
     return collection, key
 
 class VectorDB:
-    def __init__(self,name="",embedding_function=None):
+    def __init__(self,name="",embedding_function=None,distance_metric="cosine"):
         self.name=name
         self.embedding_function=embedding_function
-        self.collection, self.key = get_collection_and_key(name,embedding_function=embedding_function)
+        self.collection, self.key = get_collection_and_key(name,embedding_function=embedding_function,distance_metric=distance_metric)
         load_functions(self)
 
     def __del__(self):
@@ -51,17 +51,16 @@ class VectorDB:
 
     def add_function(self,documents,function,arguments,instructions="",type="function",**args):
         self.collection.add(ids=[str(uuid4())],documents=documents,metadatas={
-            "hnsw:space": "cosine",
             "type": type,
             "function": function,
             "arguments": json.dumps(arguments),
             "instructions": instructions,
-            "template": json.dumps(args)
+            # "template": json.dumps(args),
+            **args
             })
 
     def add_document(self,document,**kwargs):
         self.collection.add(ids=[str(uuid4())],documents=document,metadatas={
-            "hnsw:space": "cosine",
             "type": "document",
             **kwargs
             })

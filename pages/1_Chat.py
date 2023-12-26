@@ -3,7 +3,7 @@ import os
 from PIL import Image
 import streamlit as st
 from webui import MENU_ITEMS, SERVERS, ObjectNamespace, get_cwd, i18n
-from webui.downloader import OUTPUT_DIR, save_file
+from webui.downloader import BASE_MODELS_DIR, OUTPUT_DIR, save_file
 from webui.functions import call_function
 from webui.image_generation import describe_image, generate_images
 st.set_page_config(layout="wide",menu_items=MENU_ITEMS)
@@ -17,15 +17,15 @@ from webui.utils import get_filenames, get_index, get_optimal_torch_device, gc_c
 CWD = get_cwd()
 
 def get_model_list():
-    models_list =  [os.path.basename(path) for path in get_filenames(root=os.path.join(CWD,"models","SD"),exts=["safetensors","ckpt"])]
+    models_list =  [os.path.basename(path) for path in get_filenames(root=BASE_MODELS_DIR,folder="SD",exts=["safetensors","ckpt"])]
     return models_list
 
 def get_voice_list():
-    models_list = [os.path.relpath(path,CWD) for path in get_filenames(root=os.path.join(CWD,"models","RVC"),exts=["pth"])]
+    models_list = [os.path.relpath(path,CWD) for path in get_filenames(root=BASE_MODELS_DIR,folder="RVC",exts=["pth"])]
     return models_list
 
 def get_character_list():
-    models_list =  [os.path.relpath(path,CWD) for path in get_filenames(root=os.path.join(CWD,"models","Characters"),exts=["json"])]
+    models_list =  [os.path.relpath(path,CWD) for path in get_filenames(root=BASE_MODELS_DIR,folder="Characters",exts=["json"])]
     return models_list
 
 def init_state():
@@ -53,9 +53,9 @@ def refresh_data(state):
     return state
 
 def get_threshold(freq: str):
-    if freq=="rarely": return 1.1
-    elif freq=="sometimes": return 1.5
-    elif freq=="always": return 2
+    if freq=="rarely": return .5
+    elif freq=="sometimes": return .75
+    elif freq=="always": return 1
     else: return 0
 
 @st.cache_data
@@ -202,23 +202,11 @@ if __name__=="__main__":
                     else:
                         augmented_prompt = f"{prompt}\nImage caption: {state.tags}" if state.tags else prompt
                     
-                    with st.spinner(f"{state.character.name} is typing..."):
-                        for response in state.character.generate_text(augmented_prompt):
-                            full_response = response
-                            message_placeholder.markdown(full_response)
-
-                    if not state.character.autoplay:
-                        message = {"role": state.character.user, "content": prompt}
-                        if state.uploaded_image: message["image"] = [state.uploaded_image]
-                        state.character.messages.append(message) #add user prompt to history
-                        state.uploaded_image = None
-                        state.tags = None
-
                     with st.spinner(f"{state.character.name} is thinking..."):
                         image_prompt = call_function(
                             state.character,
                             prompt=augmented_prompt,
-                            reply=full_response,
+                            # reply=full_response,
                             use_grammar=True,
                             threshold=get_threshold(state.frequency),
                             verbose=True,
@@ -226,11 +214,37 @@ if __name__=="__main__":
                             positive_suffix=state.tags,
                             image=state.uploaded_image,
                             censor=state.censor
-                            ) # calls function
-                    if image_prompt is not None:
+                        ) # function calling
+
+                    if image_prompt is None:
+                        with st.spinner(f"{state.character.name} is typing..."):
+                            for response in state.character.generate_text(augmented_prompt):
+                                full_response = response
+                                message_placeholder.markdown(full_response)
+                        with st.spinner(f"{state.character.name} is thinking..."):
+                            image_prompt = call_function(
+                                state.character,
+                                prompt=full_response,
+                                # reply=full_response,
+                                use_grammar=True,
+                                threshold=get_threshold(state.frequency),
+                                verbose=True,
+                                checkpoint=state.checkpoint,
+                                positive_suffix=state.tags,
+                                image=state.uploaded_image,
+                                censor=state.censor
+                            ) # function calling
+                    if image_prompt:
                         with st.spinner(f"{state.character.name} is creating an image..."):
                             images = generate_images(image_prompt)
                             st.image(images)
+
+                    if not state.character.autoplay:
+                        message = {"role": state.character.user, "content": prompt}
+                        if state.uploaded_image: message["image"] = [state.uploaded_image]
+                        state.character.messages.append(message) #add user prompt to history
+                        state.uploaded_image = None
+                        state.tags = None
 
                 if not state.mute:
                     audio = state.character.text_to_speech(full_response)
