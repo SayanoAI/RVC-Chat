@@ -2,8 +2,8 @@
 
 REM This script will check if a conda environment is available and create it if not
 for /f %%i in ('cd') do set ENV_NAME=%%~nxi
-set INSTALL_DIR=%userprofile%\Miniconda3
-SET PATH=%PATH%;%INSTALL_DIR%
+SET INSTALL_DIR=%userprofile%\Miniconda3
+SET PATH=%INSTALL_DIR%\condabin;%PATH%
 
 CALL conda info --envs | findstr /i %ENV_NAME%
 if %errorlevel% == 0 (
@@ -18,8 +18,6 @@ rem Activate environment
 CALL conda activate %ENV_NAME%
 
 if %errorlevel% == 0 (
-    rem ensure cublas is used
-    SET CMAKE_ARGS="-DLLAMA_CUBLAS=on"
     rem install packages
     CALL pip install -r requirements.txt
     CALL streamlit run Home.py
